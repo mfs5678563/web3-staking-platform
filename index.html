@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web3 Staking Platform | 代币质押复利生息</title>
-    <link rel="icon" href="https://p.qqan.com/up/2024-9/17261239977344949.png" type="image/png">
+    <link rel="icon" href="https://cdn.iconscout.com/icon/free/png-512/ethereum-2752111-2286872.png" type="image/png">
     <style>
         * {
             margin: 0;
@@ -15,9 +15,9 @@
 
         :root {
             --primary: #6366f1;
-            --primary-dark: #4f46e5;
+            --primary-dark: #4f63e1;
             --secondary: #10b981;
-            --bg-main: #0f12a2;
+            --bg-main: #0f1222;
             --bg-card: #1e293b;
             --text-primary: #f1f5f9;
             --text-secondary: #94a3b8;
@@ -28,12 +28,13 @@
         }
 
         body {
-            background: linear-gradient(135deg, #0f12a2 0%, #1e293b 100%);
+            background: linear-gradient(135deg, #0f1222 0%, #1e293b 100%);
             color: var(--text-primary);
             min-height: 100vh;
             line-height: 1.6;
         }
 
+        /* 导航栏 */
         nav {
             background: rgba(30, 41, 59, 0.95);
             backdrop-filter: blur(10px);
@@ -47,21 +48,19 @@
             border-bottom: 1px solid var(--border);
         }
 
-        .logo-img {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-right: 8px;
-        }
-
         .logo {
             font-size: 1.5rem;
             font-weight: 700;
             color: var(--primary);
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 10px;
+        }
+
+        .logo img {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
         }
 
         .connect-wallet {
@@ -84,12 +83,14 @@
             background: var(--secondary);
         }
 
+        /* 主容器 */
         .container {
             max-width: 1200px;
             margin: 2rem auto;
             padding: 0 5%;
         }
 
+        /* 数据概览卡片 */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -129,6 +130,7 @@
             margin-top: 0.25rem;
         }
 
+        /* 质押操作区 */
         .staking-section {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -224,7 +226,7 @@
         }
 
         .unstake-btn:hover {
-            background: #d97706;
+            background: #d17a00;
         }
 
         .btn-disabled {
@@ -232,6 +234,7 @@
             cursor: not-allowed;
         }
 
+        /* 收益信息区 */
         .rewards-section {
             background: var(--bg-card);
             padding: 2rem;
@@ -266,12 +269,14 @@
             color: var(--success);
         }
 
+        /* 响应式适配 */
         @media (max-width: 768px) {
             .staking-section {
                 grid-template-columns: 1fr;
             }
         }
 
+        /* 加载/提示样式 */
         .loading {
             display: none;
             position: fixed;
@@ -314,15 +319,18 @@
     </style>
 </head>
 <body>
+    <!-- 导航栏 -->
     <nav>
         <div class="logo">
-            <img class="logo-img" src="https://p.qqan.com/up/2024-9/17261239977344949.png" alt="Logo">
+            <img src="https://cdn.iconscout.com/icon/free/png-512/ethereum-2752111-2286872.png" alt="Logo">
             <span>Web3 Staking</span>
         </div>
         <button class="connect-wallet" id="connectWalletBtn">连接钱包</button>
     </nav>
 
+    <!-- 主容器 -->
     <div class="container">
+        <!-- 数据概览 -->
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-title">总质押量</div>
@@ -346,7 +354,9 @@
             </div>
         </div>
 
+        <!-- 质押/解押操作区 -->
         <div class="staking-section">
+            <!-- 质押 -->
             <div class="action-card">
                 <h3 class="card-title">
                     <span>📥</span>
@@ -365,6 +375,7 @@
                 <button class="action-btn stake-btn" id="stakeBtn">确认质押</button>
             </div>
 
+            <!-- 解押 -->
             <div class="action-card">
                 <h3 class="card-title">
                     <span>📤</span>
@@ -384,6 +395,7 @@
             </div>
         </div>
 
+        <!-- 收益详情区 -->
         <div class="rewards-section">
             <h3 class="card-title">
                 <span>💰</span>
@@ -411,20 +423,24 @@
         </div>
     </div>
 
+    <!-- 加载遮罩 -->
     <div class="loading" id="loading">
         <span>交易处理中...</span>
     </div>
 
+    <!-- 提示弹窗 -->
     <div class="toast" id="toast"></div>
 
     <script>
+        // 全局状态
         let walletAddress = null;
         let isWalletConnected = false;
         let userBalance = 0;
         let userStaked = 0;
         let pendingRewards = 0;
-        const APR = 12.5;
+        const APR = 12.5; // 年化收益率
 
+        // DOM 元素
         const connectWalletBtn = document.getElementById('connectWalletBtn');
         const stakeAmountInput = document.getElementById('stakeAmount');
         const stakeMaxBtn = document.getElementById('stakeMaxBtn');
@@ -436,6 +452,7 @@
         const loading = document.getElementById('loading');
         const toast = document.getElementById('toast');
 
+        // 初始化数据
         function initData() {
             document.getElementById('totalStaked').textContent = '1,250,000.00 STK';
             document.getElementById('apr').textContent = `${APR.toFixed(2)}%`;
@@ -443,6 +460,7 @@
             startCountdown();
         }
 
+        // 更新用户UI
         function updateUserUI() {
             document.getElementById('myStaked').textContent = `${userStaked.toFixed(2)} STK`;
             document.getElementById('pendingRewards').textContent = `${pendingRewards.toFixed(2)} STK`;
@@ -452,10 +470,12 @@
             document.getElementById('totalRewards').textContent = pendingRewards.toFixed(2) + ' STK';
         }
 
+        // 计算每日收益
         function calculateDailyRewards(stakedAmount) {
             return stakedAmount * (APR / 100) / 365;
         }
 
+        // 倒计时
         function startCountdown() {
             const nextCompoundEl = document.getElementById('nextCompound');
             setInterval(() => {
@@ -470,6 +490,7 @@
             }, 1000);
         }
 
+        // 钱包连接
         connectWalletBtn.addEventListener('click', async () => {
             if (isWalletConnected) {
                 showToast('钱包已连接', 'success');
@@ -478,6 +499,7 @@
 
             try {
                 loading.style.display = 'flex';
+                // 模拟钱包连接
                 await new Promise(resolve => setTimeout(resolve, 1500));
                 walletAddress = '0x742d35Cc6634C0532925a3b8865Ca44E118b606';
                 isWalletConnected = true;
@@ -493,6 +515,7 @@
             }
         });
 
+        // MAX按钮
         stakeMaxBtn.addEventListener('click', () => {
             stakeAmountInput.value = userBalance.toFixed(2);
         });
@@ -501,6 +524,7 @@
             unstakeAmountInput.value = userStaked.toFixed(2);
         });
 
+        // 质押
         stakeBtn.addEventListener('click', async () => {
             const amount = parseFloat(stakeAmountInput.value);
             if (!isWalletConnected) {
@@ -531,6 +555,7 @@
             }
         });
 
+        // 解押
         unstakeBtn.addEventListener('click', async () => {
             const amount = parseFloat(unstakeAmountInput.value);
             if (!isWalletConnected) {
@@ -561,6 +586,7 @@
             }
         });
 
+        // 领取收益
         claimRewardsBtn.addEventListener('click', async () => {
             if (!isWalletConnected) {
                 showToast('请先连接钱包', 'error');
@@ -585,6 +611,7 @@
             }
         });
 
+        // 提示弹窗
         function showToast(message, type = 'success') {
             toast.textContent = message;
             toast.className = `toast ${type} show`;
