@@ -1,55 +1,34 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FIST Staking DApp</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIST Staking DApp</title>
 
-<!-- 钱包历史记录头像（强制识别） -->
-<link rel="icon" sizes="192x192" href="https://p3-flow-image-sign.byteimg.com/tos-cn-i-a9rneduch4/029621c6297a421899d4d3b2f93d8911~tplv-a9rneduch4-image.image">
-<link rel="apple-touch-icon" href="https://p3-flow-image-sign.byteimg.com/tos-cn-i-a9rneduch4/029621c6297a421899d4d3b2f93d8911~tplv-a9rneduch4-image.image">
-<meta name="application-name" content="FIST">
+    <!-- ✅ 钱包识别核心 -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/logo.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/logo.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/logo.png">
 
-<style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif}
-body{background:#0f172a;color:#fff;padding:20px}
-.container{max-width:600px;margin:0 auto}
-.card{background:#1e293b;padding:24px;border-radius:16px;margin-bottom:20px}
-h2{font-size:18px;margin-bottom:16px}
-input{width:100%;padding:14px;background:#0f172a;border:1px solid #334155;border-radius:10px;color:#fff;font-size:16px;margin-bottom:15px}
-button{width:100%;padding:14px;border:none;border-radius:10px;font-size:16px;font-weight:bold;margin-bottom:10px}
-.stake{background:#6366f1;color:#fff}
-.unstake{background:#f59e0b;color:#fff}
-.claim{background:#10b981;color:#fff}
-.connect{background:#3b82f6;color:#fff}
-</style>
+    <link rel="apple-touch-icon" sizes="180x180" href="/logo.png">
+
+    <meta name="application-name" content="FIST Staking">
+    <meta name="apple-mobile-web-app-title" content="FIST">
+    <meta name="theme-color" content="#f59e0b">
+
+    <!-- ✅ 钱包抓取 -->
+    <meta property="og:title" content="FIST Staking DApp">
+    <meta property="og:description" content="Stake FIST and earn rewards">
+    <meta property="og:image" content="/logo.png">
+
+    <!-- ✅ PWA -->
+    <link rel="manifest" href='data:application/json,{
+        "name":"FIST Staking",
+        "short_name":"FIST",
+        "icons":[
+            {"src":"/logo.png","sizes":"192x192","type":"image/png"},
+            {"src":"/logo.png","sizes":"512x512","type":"image/png"}
+        ],
+        "theme_color":"#f59e0b",
+        "background_color":"#0f172a",
+        "display":"standalone"
+    }'>
 </head>
-
-<body>
-<div class="container">
-
-  <div class="card">
-    <h2>钱包连接</h2>
-    <button class="connect">连接钱包</button>
-  </div>
-
-  <div class="card">
-    <h2>质押 FIST</h2>
-    <input type="number" placeholder="输入质押数量">
-    <button class="stake">确认质押</button>
-  </div>
-
-  <div class="card">
-    <h2>解押 FIST</h2>
-    <input type="number" placeholder="输入解押数量">
-    <button class="unstake">确认解押</button>
-  </div>
-
-  <div class="card">
-    <h2>收益领取</h2>
-    <button class="claim">领取全部收益</button>
-  </div>
-
-</div>
-</body>
-</html>
