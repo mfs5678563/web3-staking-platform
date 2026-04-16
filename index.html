@@ -1,19 +1,98 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>大唐梦 - 链上链下生态平台</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:"Microsoft YaHei",serif}
+  body{background:#120b07;color:#f6e8d0;
+    background-image:linear-gradient(rgba(12,6,3,0.95),rgba(20,10,5,0.95));
+    padding:20px;max-width:500px;margin:0 auto;
+  }
+  .glass{
+    background:rgba(44,24,12,0.7);
+    border-radius:20px;padding:22px;margin-bottom:16px;
+    border:1px solid rgba(255,215,0,0.18);
+  }
+  .title{font-size:19px;font-weight:bold;margin-bottom:10px;color:#ffd700}
+  .sub{color:#d4b886;font-size:14px;line-height:1.5;margin-bottom:12px}
+  .btn{
+    background:linear-gradient(90deg,#e4a120,#ffc843);
+    color:#220e04;border:none;
+    border-radius:14px;padding:16px;width:100%;
+    font-size:16px;font-weight:bold;margin-bottom:10px
+  }
+  .btn-sm{padding:11px;font-size:14px}
+  .btn-gold{background:linear-gradient(90deg,#ffb703,#ffcc00)}
+  .btn-dark{background:#2d1a0b;color:#ffd700;border:1px solid #ffd700}
+  .item{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:14px 0;border-bottom:1px solid rgba(255,215,0,0.1)
+  }
+  .item:last-child{border-bottom:none}
+  .gold{color:#ffd700;font-weight:bold}
+  .tip{font-size:12px;color:#b89a70;margin-top:6px}
+</style>
+</head>
+<body>
 
-contract ZHM is ERC20 {
-    address public stakingContract;
+<div style="text-align:center;margin:20px 0">
+  <h1 style="background:linear-gradient(90deg,#ffd700,#ffedb8);-webkit-background-clip:text;color:transparent">
+    大唐梦
+  </h1>
+  <div class="sub">链上数字生态 · 链下实体赋能 · 盛唐文化生态</div>
+</div>
 
-    constructor() ERC20("ZhongHuaMeng", "ZHM") {}
+<button class="btn" id="connectBtn">连接钱包 · 进入长安</button>
+<div id="address" style="text-align:center;margin:10px 0;opacity:0.8"></div>
 
-    function setStakingContract(address _staking) external onlyOwner {
-        stakingContract = _staking;
-    }
+<div class="glass">
+  <div class="title">我的生态资产</div>
+  <div class="item"><div>大唐积分（DTANG）</div><div class="gold">0.00</div></div>
+  <div class="item"><div>链下权益点数</div><div class="gold">0</div></div>
+  <div class="item"><div>待领生态分红</div><div class="gold">0.00 USDT</div></div>
+  <button class="btn btn-gold btn-sm">领取全部分红</button>
+</div>
 
-    function mint(address to, uint256 amount) external {
-        require(msg.sender == stakingContract, "only staking");
-        _mint(to, amount);
-    }
+<div class="glass">
+  <div class="title">链上生态</div>
+  <div class="sub">基于公链的去中心化经济系统</div>
+  <button class="btn btn-sm">质押挖矿 · 赚积分</button>
+  <button class="btn btn-sm">流动性节点 · 生态分红</button>
+  <button class="btn btn-sm">DAO治理 · 投票决策</button>
+</div>
+
+<div class="glass">
+  <div class="title">链下生态（实体赋能）</div>
+  <div class="sub">持有权益可在线下实体使用</div>
+  <button class="btn btn-dark btn-sm">线下商家兑换</button>
+  <button class="btn btn-dark btn-sm">文旅景区核销</button>
+  <button class="btn btn-dark btn-sm">大唐会员权益</button>
+</div>
+
+<div class="glass">
+  <div class="title">生态应用中心</div>
+  <div class="item"><div>链上转账</div><button class="btn btn-sm">转出</button></div>
+  <div class="item"><div>积分兑换</div><button class="btn btn-sm">兑换</button></div>
+  <div class="item"><div>线下核销记录</div><button class="btn btn-sm">查看</button></div>
+</div>
+
+<div class="glass">
+  <div class="title">大唐生态说明</div>
+  <div class="sub">
+  大唐梦以链上通证经济为基础，结合线下实体商家、文旅、文化、消费场景，实现链上持有即享受链下权益，构建完整的“上链+落地”双生态闭环。
+  </div>
+  <div class="tip">✅ 去中心化 · ✅ 链上可查 · ✅ 线下落地 · ✅ 长期生态</div>
+</div>
+
+<script>
+document.getElementById('connectBtn').onclick = async () => {
+  if(!window.ethereum)return alert('请安装MetaMask')
+  await window.ethereum.request({method:'eth_requestAccounts'})
+  document.getElementById('address').innerText = '已连接 · 长安居民'
+  alert('已连接钱包，大唐梦生态加载完成')
 }
+</script>
+</body>
+</html>
