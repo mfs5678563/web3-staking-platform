@@ -105,6 +105,8 @@ radial-gradient(circle at 90% 80%,rgba(20,30,60,0.35),transparent 50%)}
 <script>
 const MATRIX_CONTRACT = "0x4d9C3000Aa71FeB18C1d607703BDa912991eF8F1";
 const DAI_ADDR       = "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063";
+
+// 已改成你指定的管理员地址
 const PROJECT_WALLET = "0x627f6e1887571ac08214315ad5b2fa7ab7345f1".toLowerCase();
 
 let web3, account;
@@ -214,7 +216,7 @@ function renderPower() {
   claimBtn.style.display = userPower >= 3500 ? "block" : "none";
 }
 
-// 卡牌中间加入 🐳 鲸鱼
+// 卡牌中间 🐳 鲸鱼
 function renderCards() {
   const cardList = document.getElementById("cardList");
   cardList.innerHTML = "";
