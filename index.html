@@ -1,209 +1,160 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>DTM Staking</title>
-  <style>
-    * { box-sizing: border-box; font-family: system-ui, sans-serif; }
-    body { background: #0B2A23; color: #fff; margin: 0; padding: 0; }
-    .container { max-width: 600px; margin: 0 auto; padding: 10px; }
-    .card { background: #111; border-radius: 12px; padding: 16px; margin-bottom: 16px; border:1px solid #333; }
-    .title { font-size: 20px; font-weight: bold; color:#ffc; }
-    .row { display: flex; justify-content: space-between; padding: 6px 0; font-size:14px; }
-    input { width: 100%; background:#222; border:1px solid #444; color:#fff; padding:12px; border-radius:8px; margin-bottom:10px; }
-    button { width: 100%; border:none; padding:12px; border-radius:8px; font-weight:bold; margin-bottom:8px; cursor:pointer; }
-    .btn-primary { background: #2E8B57; color: #fff; }
-    .btn-danger { background: #c0392b; color: #fff; }
-    .btn-warning { background: #f39c12; color: #000; }
-    .c-blue { color:#8cf; }
-    .c-yellow { color:#fc5; }
-    .countdown { color:#fc5; text-align:center; padding:10px 0; }
-    .invite-box { background:#222; padding:10px; border-radius:8px; color:#8cf; margin:8px 0; font-family:monospace; }
-  </style>
-</head>
-<body>
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
 
-<div class="container">
-  <div class="title">🏮 DTM 质押挖矿</div>
-
-  <div class="card">
-    <button class="btn-primary" onclick="connect()">连接钱包</button>
-    <div class="row"><span>地址</span><span id="addr" class="c-blue">未连接</span></div>
-    <div class="row"><span>可用余额</span><span id="bal" class="c-blue">0</span></div>
-    <div class="row"><span>已质押</span><span id="staked" class="c-yellow">0</span></div>
-    <div class="row"><span>待领收益</span><span id="reward" class="c-yellow">0</span></div>
-    <div class="row"><span>我的上级</span><span id="inviter" class="c-blue">无</span></div>
-  </div>
-
-  <div class="card">
-    <div style="font-weight:bold;color:#fc5;margin-bottom:8px;">邀请推广</div>
-    <div class="row"><span>我的邀请码</span></div>
-    <div class="invite-box" id="mycode">-</div>
-    <button class="btn-primary" onclick="copyInvite()">复制邀请链接</button>
-  </div>
-
-  <div class="card">
-    <input type="number" id="amt" placeholder="输入数量" value="100">
-    <button class="btn-primary" onclick="approve()">授权</button>
-    <button class="btn-primary" onclick="stake()">质押</button>
-    <button class="btn-danger" onclick="unstake()">解押</button>
-    <div id="countdown" class="countdown">加载中...</div>
-    <button class="btn-warning" onclick="claim()">领取收益</button>
-  </div>
-</div>
-
-<script>
-const TOKEN_ADDR = "0x050d384c9f577296301e4bdebbddf1164bcf6f12";
-const POOL_ADDR  = "0x5c12cf9b1cc9db2ad4339a9d6ce03b37fae234b0";
-let account = null;
-
-function $(s) { return document.getElementById(s) }
-
-// 连接钱包
-async function connect() {
-  if (!window.ethereum) return alert("请安装钱包");
-  let a = (await ethereum.request({ method: 'eth_requestAccounts' }))[0];
-  account = a.toLowerCase();
-  $("addr").innerText = account.slice(0, 6) + "..." + account.slice(-4);
-  $("mycode").innerText = account.slice(0, 10) + "...";
-  bindInviteFromUrl();
-  refreshAll();
+interface IERC20 {
+    function transfer(address to, uint256 value) external returns (bool);
+    function transferFrom(address from,address to,uint256 value) external returns (bool);
+    function balanceOf(address account) external view returns (uint256);
 }
 
-// 刷新全部
-async function refreshAll() {
-  if (!account) return;
-  await getBalance();
-  await getStaked();
-  await getPendingReward();
-  showInviter();
-}
+contract DTMStaking {
 
-// 用户余额
-async function getBalance() {
-  let data = "0x70a08231" + "000000000000000000000000" + account.slice(2);
-  let res = await ethCall(TOKEN_ADDR, data);
-  $("bal").innerText = (format(res)).toFixed(2);
-}
+    IERC20 public dtm;
+    address public owner;
 
-// 已质押
-async function getStaked() {
-  let data = "0x83507971" + "000000000000000000000000" + account.slice(2);
-  let res = await ethCall(POOL_ADDR, data);
-  let val = parseInt(res, 16) / 1e18;
-  $("staked").innerText = val.toFixed(2);
-}
+    uint256 public totalStaked;
+    uint256 public rewardPerSecond;
+    uint256 public accRewardPerShare;
+    uint256 public lastUpdateTime;
 
-// 待领收益（链上真实）
-async function getPendingReward() {
-  let data = "0xd1c66f8b" + "000000000000000000000000" + account.slice(2);
-  let res = await ethCall(POOL_ADDR, data);
-  let val = parseInt(res, 16) / 1e18;
-  $("reward").innerText = val.toFixed(2);
-}
+    struct User {
+        uint256 amount;
+        uint256 rewardDebt;
+        address inviter;
+    }
 
-// 授权
-async function approve() {
-  let data = "0x095ea7b3" +
-    pad64(POOL_ADDR) +
-    "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-  await sendTx(TOKEN_ADDR, data);
-  alert("授权成功");
-}
+    mapping(address => User) public users;
 
-// 质押
-async function stake() {
-  let amt = parseFloat($("amt").value);
-  if (amt <= 0) return alert("输入有效数量");
-  let wei = toWei(amt);
-  let data = "0xa694fc3a" + pad64(wei);
-  await sendTx(POOL_ADDR, data);
-  alert("质押成功");
-  refreshAll();
-}
+    modifier onlyOwner(){
+        require(msg.sender == owner,"not owner");
+        _;
+    }
 
-// 解押（真实链上转出！）
-async function unstake() {
-  let amt = parseFloat($("amt").value);
-  if (amt <= 0) return alert("输入有效数量");
-  let wei = toWei(amt);
-  let data = "0x6ef7d47a" + pad64(wei); // 正确合约函数
-  await sendTx(POOL_ADDR, data);
-  alert("解押成功，已转回钱包");
-  refreshAll();
-}
+    constructor(address _dtm,uint256 _rps){
+        dtm = IERC20(_dtm);
+        rewardPerSecond = _rps;
+        lastUpdateTime = block.timestamp;
+        owner = msg.sender;
+    }
 
-// 领取收益
-async function claim() {
-  await sendTx(POOL_ADDR, "0x4e71d92d");
-  alert("领取成功");
-  refreshAll();
-}
+    // 更新池子
+    function updatePool() public {
+        if(totalStaked == 0){
+            lastUpdateTime = block.timestamp;
+            return;
+        }
 
-// 邀请绑定
-async function bind(inviter) {
-  let data = "0x9d118770" + pad64(inviter);
-  await sendTx(POOL_ADDR, data);
-}
+        uint256 time = block.timestamp - lastUpdateTime;
+        uint256 reward = time * rewardPerSecond;
 
-// 从链接绑定上级
-async function bindInviteFromUrl() {
-  let u = new URL(location.href);
-  let ref = u.searchParams.get("ref");
-  if (!ref) return;
-  ref = ref.toLowerCase();
-  if (ref === account) return;
-  localStorage.setItem("inviter_" + account, ref);
-  alert("已绑定上级");
-  showInviter();
-}
+        accRewardPerShare += reward * 1e12 / totalStaked;
+        lastUpdateTime = block.timestamp;
+    }
 
-function showInviter() {
-  let inv = localStorage.getItem("inviter_" + account);
-  if (!inv) $("inviter").innerText = "无";
-  else $("inviter").innerText = inv.slice(0, 6) + "..." + inv.slice(-4);
-}
+    // 绑定邀请
+    function bind(address _inviter) external {
+        require(_inviter != msg.sender, "self");
+        require(users[msg.sender].inviter == address(0), "bound");
 
-async function copyInvite() {
-  let base = location.href.split("?")[0];
-  let link = base + "?ref=" + account;
-  await navigator.clipboard.writeText(link);
-  alert("复制成功");
-}
+        users[msg.sender].inviter = _inviter;
+    }
 
-// 工具
-function toWei(n) {
-  return BigInt(Math.floor(n * 1e18)).toString(16);
-}
-function pad64(s) {
-  return s.padStart(64, "0");
-}
-function format(hex) {
-  return parseInt(hex, 16) / 1e18;
-}
-async function ethCall(to, data) {
-  return await ethereum.request({
-    method: "eth_call",
-    params: [{ to, data }, "latest"]
-  });
-}
-async function sendTx(to, data) {
-  return await ethereum.request({
-    method: "eth_sendTransaction",
-    params: [{ from: account, to, data, gas: "0x300000" }]
-  });
-}
+    // 质押
+    function stake(uint256 amount) external {
+        User storage user = users[msg.sender];
 
-// 倒计时
-setInterval(() => {
-  let now = Math.floor(Date.now() / 1000);
-  let next = 3600 * 8 - (now % (3600 * 8));
-  let h = Math.floor(next / 3600);
-  let m = Math.floor((next % 3600) / 60);
-  let s = next % 60;
-  $("countdown").innerText = `⏱ ${h}时${m}分${s}秒`;
-}, 1000);
-</script>
-</body>
-</html>
+        updatePool();
+
+        // 发收益
+        if(user.amount > 0){
+            uint256 pending = user.amount * accRewardPerShare / 1e12 - user.rewardDebt;
+            if(pending > 0){
+                _safeTransfer(msg.sender, pending);
+                _inviteReward(msg.sender, pending);
+            }
+        }
+
+        dtm.transferFrom(msg.sender, address(this), amount);
+
+        user.amount += amount;
+        totalStaked += amount;
+
+        user.rewardDebt = user.amount * accRewardPerShare / 1e12;
+    }
+
+    // 解押
+    function unstake(uint256 amount) external {
+        User storage user = users[msg.sender];
+        require(user.amount >= amount,"not enough");
+
+        updatePool();
+
+        uint256 pending = user.amount * accRewardPerShare / 1e12 - user.rewardDebt;
+
+        if(pending > 0){
+            _safeTransfer(msg.sender, pending);
+            _inviteReward(msg.sender, pending);
+        }
+
+        user.amount -= amount;
+        totalStaked -= amount;
+
+        dtm.transfer(msg.sender, amount);
+
+        user.rewardDebt = user.amount * accRewardPerShare / 1e12;
+    }
+
+    // 领取
+    function claim() external {
+        User storage user = users[msg.sender];
+
+        updatePool();
+
+        uint256 pending = user.amount * accRewardPerShare / 1e12 - user.rewardDebt;
+        require(pending > 0,"no reward");
+
+        _safeTransfer(msg.sender, pending);
+        _inviteReward(msg.sender, pending);
+
+        user.rewardDebt = user.amount * accRewardPerShare / 1e12;
+    }
+
+    // 查询收益
+    function pendingReward(address _user) external view returns(uint256){
+        User storage user = users[_user];
+
+        uint256 tempAcc = accRewardPerShare;
+
+        if(block.timestamp > lastUpdateTime && totalStaked != 0){
+            uint256 reward = (block.timestamp - lastUpdateTime) * rewardPerSecond;
+            tempAcc += reward * 1e12 / totalStaked;
+        }
+
+        return user.amount * tempAcc / 1e12 - user.rewardDebt;
+    }
+
+    // 邀请奖励（5%）
+    function _inviteReward(address userAddr,uint256 reward) internal {
+        address inv = users[userAddr].inviter;
+        if(inv != address(0)){
+            uint256 bonus = reward * 5 / 100;
+            _safeTransfer(inv, bonus);
+        }
+    }
+
+    function _safeTransfer(address to,uint256 amount) internal {
+        uint256 bal = dtm.balanceOf(address(this));
+        if(amount > bal) amount = bal;
+        dtm.transfer(to, amount);
+    }
+
+    // 注入奖励池
+    function deposit(uint256 amount) external onlyOwner {
+        dtm.transferFrom(msg.sender,address(this),amount);
+    }
+
+    function setReward(uint256 r) external onlyOwner{
+        updatePool();
+        rewardPerSecond = r;
+    }
+}
