@@ -3,352 +3,207 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>大唐梦DTM质押挖矿</title>
+  <title>DTM Staking</title>
   <style>
     * { box-sizing: border-box; font-family: system-ui, sans-serif; }
     body { background: #0B2A23; color: #fff; margin: 0; padding: 0; }
     .container { max-width: 600px; margin: 0 auto; padding: 10px; }
-    .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; }
-    .header .title { font-size: 20px; font-weight: bold; }
-    .btn-menu { background: none; border: none; color: #fff; font-size: 24px; }
-    .card { background: #141414; border-radius: 12px; padding: 16px; margin-bottom: 16px; border:1px solid #222; }
-    .card-title { font-size: 16px; margin-bottom: 10px; color: #FFE066; }
-    .btn-connect { background: #25907A; color: #fff; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight:bold; }
-    .wallet-row { display: flex; justify-content: space-between; padding: 6px 0; font-size:14px; }
-    .stake-input { width: 100%; background:#111; border:1px solid #333; color:#fff; padding:12px; border-radius:8px; margin-bottom:10px; }
-    .btn-action { width: 100%; border:none; padding:12px; border-radius:8px; font-weight:bold; margin-bottom:8px; }
-    .btn-primary { background: #2A65CC; color: #fff; }
-    .btn-danger { background: #D93A54; color: #fff; }
-    .btn-warning { background: #E4B449; color: #000; }
-    .btn-disabled { background: #444; color: #999; }
-    .countdown { color: #FFE066; padding:10px 0; text-align:center; font-weight:bold; }
-    .rules { font-size:13px; line-height:1.6; color:#ccc; }
-    .menu { position: fixed; top:0; right:0; width:280px; height:100vh; background:#111; padding:20px; transform:translateX(100%); transition:0.3s; z-index:999; }
-    .menu.show { transform:translateX(0); }
-    .menu-close { text-align:right; color:#fff; padding-bottom:10px; }
-    .invite-code { padding:8px 12px; background:#222; border-radius:6px; color:#0ff; margin:8px 0; font-family:monospace; }
-    .input-menu { width:100%; padding:10px; background:#222; border:1px solid #333; color:#fff; border-radius:6px; margin-bottom:8px; }
+    .card { background: #111; border-radius: 12px; padding: 16px; margin-bottom: 16px; border:1px solid #333; }
+    .title { font-size: 20px; font-weight: bold; color:#ffc; }
+    .row { display: flex; justify-content: space-between; padding: 6px 0; font-size:14px; }
+    input { width: 100%; background:#222; border:1px solid #444; color:#fff; padding:12px; border-radius:8px; margin-bottom:10px; }
+    button { width: 100%; border:none; padding:12px; border-radius:8px; font-weight:bold; margin-bottom:8px; cursor:pointer; }
+    .btn-primary { background: #2E8B57; color: #fff; }
+    .btn-danger { background: #c0392b; color: #fff; }
+    .btn-warning { background: #f39c12; color: #000; }
+    .c-blue { color:#8cf; }
+    .c-yellow { color:#fc5; }
+    .countdown { color:#fc5; text-align:center; padding:10px 0; }
+    .invite-box { background:#222; padding:10px; border-radius:8px; color:#8cf; margin:8px 0; font-family:monospace; }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <div class="header">
-    <div class="title">🏮 大唐梦DTM质押挖矿</div>
-    <button class="btn-menu" onclick="toggleMenu()">☰</button>
+  <div class="title">🏮 DTM 质押挖矿</div>
+
+  <div class="card">
+    <button class="btn-primary" onclick="connect()">连接钱包</button>
+    <div class="row"><span>地址</span><span id="addr" class="c-blue">未连接</span></div>
+    <div class="row"><span>可用余额</span><span id="bal" class="c-blue">0</span></div>
+    <div class="row"><span>已质押</span><span id="staked" class="c-yellow">0</span></div>
+    <div class="row"><span>待领收益</span><span id="reward" class="c-yellow">0</span></div>
+    <div class="row"><span>我的上级</span><span id="inviter" class="c-blue">无</span></div>
   </div>
 
   <div class="card">
-    <button class="btn-connect" onclick="connectWallet()">连接钱包</button>
-    <div class="wallet-row"><span>钱包地址</span><span id="address" style="color:#0ff;">未连接</span></div>
-    <div class="wallet-row"><span>可用余额</span><span id="userBalance" style="color:#0ff;">0.0000</span></div>
-    <div class="wallet-row"><span>✅ 已质押</span><span id="stakedAmount" style="color:#ffcc00;">0.0000</span></div>
-    <div class="wallet-row"><span>📈 累计收益</span><span id="totalReward" style="color:#ffcc00;">0.0000</span></div>
-    <div class="wallet-row"><span>👤 我的上级</span><span id="inviter" style="color:#0ff;">无</span></div>
+    <div style="font-weight:bold;color:#fc5;margin-bottom:8px;">邀请推广</div>
+    <div class="row"><span>我的邀请码</span></div>
+    <div class="invite-box" id="mycode">-</div>
+    <button class="btn-primary" onclick="copyInvite()">复制邀请链接</button>
   </div>
 
   <div class="card">
-    <div class="card-title">邀请推广（V1-V5奖励）</div>
-    <div class="wallet-row"><span>我的邀请码</span></div>
-    <div class="invite-code" id="myCode">未连接</div>
-    <button class="btn-action btn-primary" onclick="copyInvite()" id="copyBtn">一键复制邀请链接</button>
+    <input type="number" id="amt" placeholder="输入数量" value="100">
+    <button class="btn-primary" onclick="approve()">授权</button>
+    <button class="btn-primary" onclick="stake()">质押</button>
+    <button class="btn-danger" onclick="unstake()">解押</button>
+    <div id="countdown" class="countdown">加载中...</div>
+    <button class="btn-warning" onclick="claim()">领取收益</button>
   </div>
-
-  <div class="card">
-    <div class="card-title">质押挖矿</div>
-    <input type="number" class="stake-input" id="amount" placeholder="输入数量" value="100">
-    <button class="btn-action btn-primary" onclick="approve()">授权矿池</button>
-    <button class="btn-action btn-primary" onclick="stake()">质押挖矿</button>
-    <button class="btn-action btn-danger" onclick="unstake()">解押退回</button>
-    <div id="countdown" class="countdown">加载倒计时...</div>
-    <button id="claimBtn" class="btn-action btn-warning" onclick="claim()">一键领取全部收益</button>
-  </div>
-
-  <div class="card">
-    <div class="card-title">规则说明</div>
-    <div class="rules">
-      • 质押即可挖矿，8小时自动结算一轮<br>
-      • 收益不清空，可随时一次性领取<br>
-      • 解押仅提取本人质押本金<br>
-      • 邀请绑定终身，享V1-V5级推荐奖励
-    </div>
-  </div>
-</div>
-
-<div class="menu" id="menu">
-  <div class="menu-close"><button onclick="toggleMenu()">关闭</button></div>
-  <div class="wallet-row"><span>矿池余额</span><span id="poolBalance" style="color:#ffcc00;">0.0000</span></div>
-  <br>
-  <div style="color:#ff9;font-weight:bold;margin-bottom:8px;">🏦 超级管理员后台</div>
-  <input type="number" class="input-menu" id="adminWithdrawAmt" placeholder="提取数量">
-  <button class="btn-action btn-warning" onclick="adminWithdraw()">提取底池代币</button>
 </div>
 
 <script>
-const TOKEN         = "0x050d384c9f577296301e4bdebbddf1164bcf6f12";
-const POOL          = "0x5c12cf9b1cc9db2ad4339a9d6ce03b37fae234b0";
-const ADMIN         = "0x627f6e1887571ac08214315ad5b2fa7abb7345f1";
+const TOKEN_ADDR = "0x050d384c9f577296301e4bdebbddf1164bcf6f12";
+const POOL_ADDR  = "0x5c12cf9b1cc9db2ad4339a9d6ce03b37fae234b0";
+let account = null;
 
-const ROUND_SEC     = 28800;
-const REWARD        = 1;
+function $(s) { return document.getElementById(s) }
 
-let account         = null;
-let timer           = null;
-
-function toLower(addr){ return addr ? addr.toLowerCase() : ""; }
-function toggleMenu(){ document.getElementById("menu").classList.toggle("show"); }
-
-//=============================================================================
-// 邀请关系
-//=============================================================================
-function bindInviter() {
-  const url = new URL(window.location.href);
-  const ref = url.searchParams.get("ref");
-  if (!ref || !account) return;
-  const refLower = toLower(ref);
-  const current = toLower(account);
-  if (refLower === current) return;
-  const key = `inviter_${current}`;
-  if (!localStorage.getItem(key)) {
-    localStorage.setItem(key, refLower);
-    alert("已成功绑定上级！");
-  }
-}
-
-function getMyInviter() {
-  if (!account) return "无";
-  const inv = localStorage.getItem(`inviter_${toLower(account)}`);
-  return inv ? `${inv.slice(0,6)}...${inv.slice(-4)}` : "无";
-}
-
-function getMyInviteLink() {
-  const base = window.location.href.split('?')[0];
-  return account ? `${base}?ref=${account}` : "";
-}
-
-async function copyInvite() {
-  if (!account) return alert("请先连接钱包");
-  const link = getMyInviteLink();
-  try {
-    await navigator.clipboard.writeText(link);
-    alert("复制邀请链接成功！");
-  } catch (e) { alert("复制失败"); }
-}
-
-//=============================================================================
 // 连接钱包
-//=============================================================================
-async function connectWallet(){
-  if(!window.ethereum) return alert("请在钱包浏览器打开");
-  try{
-    const accounts = await window.ethereum.request({method:'eth_requestAccounts'});
-    account = toLower(accounts[0]);
-    document.getElementById("address").innerText = account.slice(0,6)+"..."+account.slice(-4);
-    document.getElementById("myCode").innerText = account.slice(0,10)+"...";
-    bindInviter();
-    refreshAll();
-    startCountdown();
-  }catch(e){ alert("连接失败：" + e.message); }
-}
-
-//=============================================================================
-// 链上数据
-//=============================================================================
-async function getOnChainStaked() {
-  const data = "0x83507971" + account.slice(2).padStart(64, '0');
-  try {
-    const res = await window.ethereum.request({method:'eth_call',params:[{to:POOL,data},'latest']});
-    return Number(BigInt(res)) / 1e18;
-  } catch (e) { return 0; }
-}
-
-async function getUserBalance(){
-  const data = "0x70a08231"+account.slice(2).padStart(64,'0');
-  const r = await window.ethereum.request({method:'eth_call',params:[{to:TOKEN,data},'latest']});
-  return Number(BigInt(r))/1e18;
-}
-
-async function getPoolBalance(){
-  const data = "0x70a08231"+POOL.slice(2).padStart(64,'0');
-  const r = await window.ethereum.request({method:'eth_call',params:[{to:TOKEN,data},'latest']});
-  return Number(BigInt(r))/1e18;
-}
-
-//=============================================================================
-// 收益本地累计
-//=============================================================================
-function getTotalReward(){ return parseFloat(localStorage.getItem(`totalReward_${account}`) || 0); }
-function addTotalReward(amt){ localStorage.setItem(`totalReward_${account}`, (getTotalReward() + amt).toString()); }
-function clearTotalReward(){ localStorage.setItem(`totalReward_${account}`, "0"); }
-
-function getLastRoundTime(){
-  return parseInt(localStorage.getItem(`lastRound_${account}`) || Date.now());
-}
-function setLastRoundTime(t){
-  localStorage.setItem(`lastRound_${account}`, t.toString());
-}
-
-//=============================================================================
-// 统一刷新
-//=============================================================================
-async function refreshAll(){
-  if(!account) return;
-  document.getElementById("userBalance").innerText = (await getUserBalance()).toFixed(4);
-  document.getElementById("stakedAmount").innerText = (await getOnChainStaked()).toFixed(4);
-  document.getElementById("totalReward").innerText = getTotalReward().toFixed(4);
-  document.getElementById("poolBalance").innerText = (await getPoolBalance()).toFixed(4);
-  document.getElementById("inviter").innerText = getMyInviter();
-}
-
-//=============================================================================
-// 授权
-//=============================================================================
-async function approve(){
-  if(!account) return alert("请先连接钱包");
-  try{
-    const max = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-    const data = "0x095ea7b3"
-      + POOL.slice(2).padStart(64, '0')
-      + max.padStart(64, '0');
-    await window.ethereum.request({
-      method:'eth_sendTransaction',
-      params:[{from:account,to:TOKEN,data,gasLimit:"0x300000"}]
-    });
-    alert("授权成功");
-  }catch(e){ alert("授权失败：" + e.message); }
-}
-
-//=============================================================================
-// 质押（真实进合约）
-//=============================================================================
-async function stake(){
-  if(!account) return;
-  const v = document.getElementById("amount").value.trim();
-  if(!v || isNaN(v) || Number(v)<=0) return alert("输入有效数量");
-  try{
-    const amountWei = BigInt(Math.floor(Number(v) * 1e18).toFixed(0));
-    const data = "0xa694fc3a" + amountWei.toString(16).padStart(64, '0');
-    await window.ethereum.request({
-      method:'eth_sendTransaction',
-      params:[{from:account,to:POOL,data,gasLimit:"0x300000"}]
-    });
-    alert("质押成功！");
-    refreshAll();
-  }catch(e){
-    alert("质押失败：" + e.message);
-  }
-}
-
-//=============================================================================
-// 解押（真实链上转出，不是假提示）
-//=============================================================================
-async function unstake(){
-  if(!account) return;
-  const v = document.getElementById("amount").value.trim();
-  if(!v || isNaN(v) || Number(v)<=0) return alert("输入有效数量");
-  try{
-    const amountWei = BigInt(Math.floor(Number(v) * 1e18).toFixed(0));
-    const data = "0xd9f0f7f5" + amountWei.toString(16).padStart(64, '0');
-
-    await window.ethereum.request({
-      method:'eth_sendTransaction',
-      params:[{from:account,to:POOL,data,gasLimit:"0x300000"}]
-    });
-
-    alert("解押成功，代币已转回钱包！");
-    refreshAll();
-  }catch(e){
-    alert("解押失败：" + e.message);
-  }
-}
-
-//=============================================================================
-// 8小时倒计时（正常走动）
-//=============================================================================
-function startCountdown(){
-  if(!account) return;
-  clearInterval(timer);
-
-  function update(){
-    const now = Date.now();
-    const last = getLastRoundTime();
-    const next = last + ROUND_SEC * 1000;
-    let left = next - now;
-
-    if (left <= 0) {
-      addTotalReward(REWARD);
-      setLastRoundTime(now);
-      refreshAll();
-      left = ROUND_SEC * 1000;
-    }
-
-    const h = Math.floor(left / 3600000);
-    const m = Math.floor((left % 3600000) / 60000);
-    const s = Math.floor((left % 60000) / 1000);
-    document.getElementById("countdown").innerText = `⏱ 下一轮爆块：${h}时${m}分${s}秒`;
-
-    const total = getTotalReward();
-    const btn = document.getElementById("claimBtn");
-    if (total <= 0) {
-      btn.disabled = true;
-      btn.className = "btn-action btn-disabled";
-    } else {
-      btn.disabled = false;
-      btn.className = "btn-action btn-warning";
-    }
-  }
-
-  timer = setInterval(update, 1000);
-  update();
-}
-
-//=============================================================================
-// 领取收益
-//=============================================================================
-async function claim(){
-  const total = getTotalReward();
-  if(total <= 0) return alert("暂无收益可领");
-  alert(`领取成功！共计 ${total.toFixed(2)} DTM`);
-  clearTotalReward();
+async function connect() {
+  if (!window.ethereum) return alert("请安装钱包");
+  let a = (await ethereum.request({ method: 'eth_requestAccounts' }))[0];
+  account = a.toLowerCase();
+  $("addr").innerText = account.slice(0, 6) + "..." + account.slice(-4);
+  $("mycode").innerText = account.slice(0, 10) + "...";
+  bindInviteFromUrl();
   refreshAll();
 }
 
-//=============================================================================
-// 超级管理员提取底池
-//=============================================================================
-async function adminWithdraw(){
-  if(!account || toLower(account) !== toLower(ADMIN)){
-    alert("无权限");
-    return;
-  }
-  const v = document.getElementById("adminWithdrawAmt").value.trim();
-  if(!v || isNaN(v) || Number(v)<=0) return alert("输入有效数量");
-  try{
-    const amountWei = BigInt(Math.floor(Number(v)*1e18).toFixed(0));
-    const data = "0x23b872dd"
-      + POOL.slice(2).padStart(64, '0')
-      + ADMIN.slice(2).padStart(64, '0')
-      + amountWei.toString(16).padStart(64, '0');
-
-    await window.ethereum.request({
-      method:'eth_sendTransaction',
-      params:[{from:account,to:TOKEN,data,gasLimit:"0x300000"}]
-    });
-    alert("管理员提取成功！");
-    refreshAll();
-  }catch(e){
-    alert("提取失败：" + e.message);
-  }
+// 刷新全部
+async function refreshAll() {
+  if (!account) return;
+  await getBalance();
+  await getStaked();
+  await getPendingReward();
+  showInviter();
 }
 
-//=============================================================================
-// 钱包切换刷新
-//=============================================================================
-window.onload = () => {
-  if(window.ethereum){
-    window.ethereum.on('accountsChanged', () => location.reload());
-  }
+// 用户余额
+async function getBalance() {
+  let data = "0x70a08231" + "000000000000000000000000" + account.slice(2);
+  let res = await ethCall(TOKEN_ADDR, data);
+  $("bal").innerText = (format(res)).toFixed(2);
 }
+
+// 已质押
+async function getStaked() {
+  let data = "0x83507971" + "000000000000000000000000" + account.slice(2);
+  let res = await ethCall(POOL_ADDR, data);
+  let val = parseInt(res, 16) / 1e18;
+  $("staked").innerText = val.toFixed(2);
+}
+
+// 待领收益（链上真实）
+async function getPendingReward() {
+  let data = "0xd1c66f8b" + "000000000000000000000000" + account.slice(2);
+  let res = await ethCall(POOL_ADDR, data);
+  let val = parseInt(res, 16) / 1e18;
+  $("reward").innerText = val.toFixed(2);
+}
+
+// 授权
+async function approve() {
+  let data = "0x095ea7b3" +
+    pad64(POOL_ADDR) +
+    "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+  await sendTx(TOKEN_ADDR, data);
+  alert("授权成功");
+}
+
+// 质押
+async function stake() {
+  let amt = parseFloat($("amt").value);
+  if (amt <= 0) return alert("输入有效数量");
+  let wei = toWei(amt);
+  let data = "0xa694fc3a" + pad64(wei);
+  await sendTx(POOL_ADDR, data);
+  alert("质押成功");
+  refreshAll();
+}
+
+// 解押（真实链上转出！）
+async function unstake() {
+  let amt = parseFloat($("amt").value);
+  if (amt <= 0) return alert("输入有效数量");
+  let wei = toWei(amt);
+  let data = "0x6ef7d47a" + pad64(wei); // 正确合约函数
+  await sendTx(POOL_ADDR, data);
+  alert("解押成功，已转回钱包");
+  refreshAll();
+}
+
+// 领取收益
+async function claim() {
+  await sendTx(POOL_ADDR, "0x4e71d92d");
+  alert("领取成功");
+  refreshAll();
+}
+
+// 邀请绑定
+async function bind(inviter) {
+  let data = "0x9d118770" + pad64(inviter);
+  await sendTx(POOL_ADDR, data);
+}
+
+// 从链接绑定上级
+async function bindInviteFromUrl() {
+  let u = new URL(location.href);
+  let ref = u.searchParams.get("ref");
+  if (!ref) return;
+  ref = ref.toLowerCase();
+  if (ref === account) return;
+  localStorage.setItem("inviter_" + account, ref);
+  alert("已绑定上级");
+  showInviter();
+}
+
+function showInviter() {
+  let inv = localStorage.getItem("inviter_" + account);
+  if (!inv) $("inviter").innerText = "无";
+  else $("inviter").innerText = inv.slice(0, 6) + "..." + inv.slice(-4);
+}
+
+async function copyInvite() {
+  let base = location.href.split("?")[0];
+  let link = base + "?ref=" + account;
+  await navigator.clipboard.writeText(link);
+  alert("复制成功");
+}
+
+// 工具
+function toWei(n) {
+  return BigInt(Math.floor(n * 1e18)).toString(16);
+}
+function pad64(s) {
+  return s.padStart(64, "0");
+}
+function format(hex) {
+  return parseInt(hex, 16) / 1e18;
+}
+async function ethCall(to, data) {
+  return await ethereum.request({
+    method: "eth_call",
+    params: [{ to, data }, "latest"]
+  });
+}
+async function sendTx(to, data) {
+  return await ethereum.request({
+    method: "eth_sendTransaction",
+    params: [{ from: account, to, data, gas: "0x300000" }]
+  });
+}
+
+// 倒计时
+setInterval(() => {
+  let now = Math.floor(Date.now() / 1000);
+  let next = 3600 * 8 - (now % (3600 * 8));
+  let h = Math.floor(next / 3600);
+  let m = Math.floor((next % 3600) / 60);
+  let s = next % 60;
+  $("countdown").innerText = `⏱ ${h}时${m}分${s}秒`;
+}, 1000);
 </script>
 </body>
 </html>
