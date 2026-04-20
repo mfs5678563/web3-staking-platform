@@ -21,6 +21,8 @@
     .btn-primary { background: #2A65CC; color: #fff; }
     .btn-danger { background: #D93A54; color: #fff; }
     .btn-warning { background: #E4B449; color: #0B2A23; }
+    .btn-disabled { background: #666; color: #ccc; cursor: not-allowed; }
+    .countdown { color: #ffcc00; font-weight: bold; margin: 8px 0; text-align: center; }
     .rules { font-size: 14px; line-height: 1.7; color: #eee; }
     .menu { position: fixed; top: 0; right: 0; width: 280px; height: 100vh; background: #103D34; padding: 20px; transform: translateX(100%); transition: transform 0.3s ease; z-index: 999; overflow-y: auto; }
     .menu.show { transform: translateX(0); }
@@ -65,14 +67,16 @@
     <button class="btn-action btn-primary" onclick="approve()">授权矿池</button>
     <button class="btn-action btn-primary" onclick="stake()">质押挖矿</button>
     <button class="btn-action btn-danger" onclick="unstake()">解押资产</button>
-    <button class="btn-action btn-warning" onclick="claim()">领取收益</button>
+
+    <div id="countdown" class="countdown">可领取收益</div>
+    <button id="claimBtn" class="btn-action btn-warning" onclick="claim()">领取收益</button>
   </div>
 
   <div class="card">
     <div class="card-title">挖矿规则</div>
     <div class="rules">
       • 质押代币即可参与挖矿<br>
-      • 收益按质押量自动计算<br>
+      • 每8小时可领取一次收益<br>
       • 支持随时解押，灵活存取<br>
       • 收益可随时领取，实时到账
     </div>
@@ -107,6 +111,10 @@ const TOKEN_CONTRACT = "0x050d384c9f577296301e4bdebbddf1164bcf6f12";
 const POOL_ADDRESS   = "0x1160a8dbdfc52407ba1aeba104f673db722eb4f";
 const ADMIN_WALLET   = "0x627f6e1887571ac08214315ad5b2fa7abb7345f1";
 
+// 8小时冷却
+const CLAIM_COOLDOWN = 28800; // 8小时秒数
+let claimTimer = null;
+
 let account = null;
 
 function toLower(addr){ return addr ? addr.toLowerCase() : ""; }
@@ -132,6 +140,7 @@ async function connectWallet(){
     account = toLower(accounts[0]);
     document.getElementById("address").innerText = accounts[0].slice(0,6)+"..."+accounts[0].slice(-4);
     refreshUserBalance();
+    checkClaimCoolDown();
   }catch(e){
     alert("连接失败：" + e.message);
   }
@@ -206,8 +215,65 @@ async function unstake(){
   alert("解押已提交，资产将返回您的钱包");
 }
 
+// ===================== 8小时领取冷却 =====================
+function setClaimRecord(){
+  localStorage.setItem(`lastClaim_${account}`, Date.now().toString());
+}
+
+function getLastClaim(){
+  return parseInt(localStorage.getItem(`lastClaim_${account}`) || 0);
+}
+
+function checkClaimCoolDown(){
+  if(!account) return;
+  const btn = document.getElementById("claimBtn");
+  const cd = document.getElementById("countdown");
+  const last = getLastClaim();
+  const now = Date.now();
+  const left = last + CLAIM_COOLDOWN * 1000 - now;
+
+  if (left <= 0) {
+    cd.innerText = "可领取收益";
+    btn.disabled = false;
+    btn.className = "btn-action btn-warning";
+    return;
+  }
+
+  btn.disabled = true;
+  btn.className = "btn-action btn-disabled";
+
+  function showTime(){
+    const nowInner = Date.now();
+    const leftInner = last + CLAIM_COOLDOWN * 1000 - nowInner;
+    if(leftInner <= 0){
+      cd.innerText = "可领取收益";
+      btn.disabled = false;
+      btn.className = "btn-action btn-warning";
+      clearInterval(claimTimer);
+      return;
+    }
+    const h = Math.floor(leftInner / 3600000);
+    const m = Math.floor((leftInner % 3600000) / 60000);
+    const s = Math.floor((leftInner % 60000) / 1000);
+    cd.innerText = `下次可领取：${h}时${m}分${s}秒`;
+  }
+
+  clearInterval(claimTimer);
+  claimTimer = setInterval(showTime, 1000);
+  showTime();
+}
+
 async function claim(){
-  alert("收益领取成功");
+  if(!account) return alert("请先连接钱包");
+  const last = getLastClaim();
+  const now = Date.now();
+  if(now < last + CLAIM_COOLDOWN * 1000){
+    alert("未到领取时间，每8小时只能领取一次");
+    return;
+  }
+  alert("收益领取成功！");
+  setClaimRecord();
+  checkClaimCoolDown();
 }
 
 // ===================== 管理员操作 =====================
