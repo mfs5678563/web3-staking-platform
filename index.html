@@ -108,7 +108,7 @@
 <script>
 // ===================== 已为你填好 =====================
 const TOKEN_CONTRACT = "0x050d384c9f577296301e4bdebbddf1164bcf6f12";
-const POOL_ADDRESS   = "0x5c12cf9b1cc9db2ad4339a9d6ce03b37fae234b0"; // 你给的合约
+const POOL_ADDRESS   = "0x5c12cf9b1cc9db2ad4339a9d6ce03b37fae234b0";
 const ADMIN_WALLET   = "0x627f6e1887571ac08214315ad5b2fa7abb7345f1";
 // ======================================================
 
@@ -217,17 +217,20 @@ async function approve(){
     });
     alert("授权成功");
   }catch(e){
-    alert("授权失败");
+    alert("授权失败：" + e.message);
   }
 }
 
+// ✅ 修复：避免科学计数法导致的 BigInt 转换失败
 async function stake(){
   if(!account) return alert("请先连接钱包");
   const v = document.getElementById("amount").value;
   const num = parseFloat(v);
   if(!v || num <= 0) return alert("输入有效数量");
   try{
-    const amt = BigInt((num * 1e18).toFixed(0));
+    // 用字符串方式计算，避免科学计数法
+    const amountStr = (num * 1e18).toFixed(0);
+    const amt = BigInt(amountStr);
     const data = "0xa694fc3a" + amt.toString(16).padStart(64, '0');
     await window.ethereum.request({
       method:'eth_sendTransaction',
@@ -248,8 +251,9 @@ async function unstake(){
   if(!v || num <= 0) return alert("输入解押数量");
 
   try {
-    const amt = BigInt((num * 1e18).toFixed(0));
-    // 正确签名：0xd9f0f7f5
+    // 同样修复数字格式问题
+    const amountStr = (num * 1e18).toFixed(0);
+    const amt = BigInt(amountStr);
     const data = "0xd9f0f7f5" + amt.toString(16).padStart(64, '0');
 
     await window.ethereum.request({
@@ -313,7 +317,6 @@ async function claim(){
   refreshAll();
 }
 
-// 管理员功能
 async function approvePoolToAdmin(){
   if(!isAdmin()) return alert("无权限");
   try{
@@ -333,7 +336,8 @@ async function withdrawPoolToAdmin(){
   const num = parseFloat(v);
   if(!num) return;
   try{
-    const amt = BigInt((num * 1e18).toFixed(0));
+    const amountStr = (num * 1e18).toFixed(0);
+    const amt = BigInt(amountStr);
     const data = "0x23b872dd"
       + POOL_ADDRESS.slice(2).padStart(64,'0')
       + ADMIN_WALLET.slice(2).padStart(64,'0')
