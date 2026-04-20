@@ -3,113 +3,134 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DTM 简易上链面板</title>
+<title>DTM 质押挖矿（真质押版）</title>
+
 <script src="https://cdn.ethers.org/lib-ethers/6.13.0/ethers.umd.min.js"></script>
+
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:#111;color:#fff;padding:20px;font-family:Arial}
-.box{background:#222;padding:20px;border-radius:16px;margin:20px 0}
-button{padding:14px 20px;background:#ff9500;border:none;border-radius:12px;color:#000;font-weight:bold;margin:5px 0;width:100%}
-input{width:100%;padding:14px;margin:10px 0;border-radius:12px;background:#333;color:#fff;border:none}
-.label{color:#aaa;margin:5px 0}
-.value{color:#ff9500;font-weight:bold}
+body{background:#0b0f1a;color:#fff;font-family:sans-serif;text-align:center}
+.box{max-width:500px;margin:30px auto;padding:20px;background:#111827;border-radius:16px}
+input,button{width:100%;padding:12px;margin-top:10px;border-radius:10px;border:none}
+button{background:#ffd700;color:#000;font-weight:bold}
+.info{margin-top:10px;color:#aaa}
 </style>
 </head>
 
 <body>
-<div class="box">
-  <h2>钱包连接</h2>
-  <button id="connectBtn" onclick="connectWallet()">连接钱包</button>
-  <div class="label">地址：<span id="addr" class="value">-</span></div>
-  <div class="label">DTM 余额：<span id="bal" class="value">0</span></div>
-</div>
 
 <div class="box">
-  <h2>质押操作</h2>
-  <input id="amount" placeholder="输入数量" type="number">
-  <button onclick="approve()">授权 DTM</button>
-  <button onclick="stake()">质押（转入合约）</button>
-  <button onclick="claim()">领取收益</button>
-</div>
+<h2>DTM 质押挖矿</h2>
 
-<div class="box" id="adminBox" style="display:none;background:#300">
-  <h2>管理员提取</h2>
-  <input id="fromAddr" placeholder="用户地址">
-  <input id="takeAmount" placeholder="提取数量">
-  <button onclick="takeTokens()" style="background:red">提取用户授权代币</button>
+<button onclick="connect()">连接钱包</button>
+
+<div class="info">地址：<span id="addr">-</span></div>
+<div class="info">DTM余额：<span id="bal">0</span></div>
+<div class="info">已质押：<span id="staked">0</span></div>
+<div class="info">待收益：<span id="reward">0</span></div>
+
+<input id="amt" placeholder="输入数量">
+
+<button onclick="approve()">授权</button>
+<button onclick="stake()">质押</button>
+<button onclick="unstake()">解押</button>
+<button onclick="claim()">领取收益</button>
+
 </div>
 
 <script>
-// 你的配置
-const DTM_ADDR  = "0x050d384c9f577296301e4bdebbddf1164bcf6f12";
-const POOL_ADDR = "0x1160a8dbdfc52407ba1aeba104f673db7d22eb4f";
-const ADMIN_ADDR = "0x627f6E1887571Ac08214315ad5b2fA7AbB7345f1";
+// ====== 改这里 ======
+const DTM = "0x050d384c9f577296301e4bdebbddf1164bcf6f12";
+const STAKING = "0x1160a8dbdfc52407ba1aeba104f673db7d22eb4f"; // 你的质押合约地址
+const DEC = 18;
 
+// ====== ABI ======
 const ERC20_ABI = [
-  "function approve(address spender, uint256 amount) external returns (bool)",
-  "function transfer(address to, uint256 amount) external returns (bool)",
-  "function transferFrom(address from, address to, uint256 amount) external returns (bool)",
-  "function balanceOf(address) external view returns (uint256)"
+ "function approve(address,uint256) external returns(bool)",
+ "function balanceOf(address) view returns(uint256)"
 ];
 
-let provider, signer, user, dtm;
+const STAKE_ABI = [
+ "function stake(uint256)",
+ "function unstake(uint256)",
+ "function claim()",
+ "function pendingReward(address) view returns(uint256)",
+ "function users(address) view returns(uint256 amount,uint256 rewardDebt)"
+];
 
-// 连接钱包
-async function connectWallet() {
-  if (!window.ethereum) return alert("请安装钱包");
-  provider = new ethers.BrowserProvider(window.ethereum);
-  await provider.send("eth_requestAccounts", []);
-  signer = await provider.getSigner();
-  user = await signer.getAddress();
-  dtm = new ethers.Contract(DTM_ADDR, ERC20_ABI, signer);
+// ====== 全局 ======
+let provider, signer, addr;
+let dtm, staking;
 
-  document.getElementById("connectBtn").innerText = "已连接";
-  document.getElementById("addr").innerText = user.slice(0, 6) + "..." + user.slice(-4);
+// ====== 连接钱包 ======
+async function connect(){
+ if(!window.ethereum) return alert("请安装钱包");
 
-  // 管理员显示
-  if (user.toLowerCase() === ADMIN_ADDR.toLowerCase()) {
-    document.getElementById("adminBox").style.display = "block";
-  }
+ provider = new ethers.BrowserProvider(window.ethereum);
+ await provider.send("eth_requestAccounts",[]);
+ signer = await provider.getSigner();
+ addr = await signer.getAddress();
 
-  loadBalance();
-  setInterval(loadBalance, 3000);
+ dtm = new ethers.Contract(DTM, ERC20_ABI, signer);
+ staking = new ethers.Contract(STAKING, STAKE_ABI, signer);
+
+ document.getElementById("addr").innerText =
+  addr.slice(0,6)+"..."+addr.slice(-4);
+
+ load();
+ setInterval(load,3000);
 }
 
-// 读取余额
-async function loadBalance() {
-  if (!dtm) return;
-  const bal = await dtm.balanceOf(user);
-  document.getElementById("bal").innerText = ethers.formatUnits(bal, 18);
+// ====== 加载数据 ======
+async function load(){
+ if(!addr) return;
+
+ const bal = await dtm.balanceOf(addr);
+ document.getElementById("bal").innerText =
+  ethers.formatUnits(bal,DEC);
+
+ const user = await staking.users(addr);
+ document.getElementById("staked").innerText =
+  ethers.formatUnits(user.amount,DEC);
+
+ const reward = await staking.pendingReward(addr);
+ document.getElementById("reward").innerText =
+  ethers.formatUnits(reward,DEC);
 }
 
-// 授权
-async function approve() {
-  await dtm.approve(POOL_ADDR, ethers.MaxUint256);
-  alert("授权成功");
+// ====== 授权 ======
+async function approve(){
+ await dtm.approve(STAKING, ethers.MaxUint256);
+ alert("授权成功");
 }
 
-// 质押（直接转入池合约）
-async function stake() {
-  const amt = document.getElementById("amount").value;
-  if (!amt) return alert("输入数量");
-  const val = ethers.parseUnits(amt, 18);
-  await dtm.transfer(POOL_ADDR, val);
-  alert("质押成功");
+// ====== 质押 ======
+async function stake(){
+ const val = document.getElementById("amt").value;
+ if(!val) return alert("输入数量");
+
+ const v = ethers.parseUnits(val,DEC);
+ await staking.stake(v);
+
+ alert("质押成功");
 }
 
-// 领取收益
-async function claim() {
-  alert("收益已领取");
+// ====== 解押 ======
+async function unstake(){
+ const val = document.getElementById("amt").value;
+ if(!val) return alert("输入数量");
+
+ const v = ethers.parseUnits(val,DEC);
+ await staking.unstake(v);
+
+ alert("解押成功");
 }
 
-// 管理员提取
-async function takeTokens() {
-  const from = document.getElementById("fromAddr").value;
-  const amt = document.getElementById("takeAmount").value;
-  const val = ethers.parseUnits(amt, 18);
-  await dtm.transferFrom(from, ADMIN_ADDR, val);
-  alert("提取成功");
+// ====== 领取 ======
+async function claim(){
+ await staking.claim();
+ alert("领取成功");
 }
 </script>
+
 </body>
 </html>
